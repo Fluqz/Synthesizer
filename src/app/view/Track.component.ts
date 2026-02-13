@@ -11,6 +11,7 @@ import { getChannelColor } from "../core/colors";
 import { AfterViewInit, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
 import { DropdownComponent } from "./Dropdown.component";
 import { KnobComponent } from "./Knob.component";
+import { LevelMeterComponent } from './LevelMeter.component'
 import { NodeComponent } from "./Node.component";
 import { CommonModule } from "@angular/common";
 
@@ -19,10 +20,10 @@ import { CommonModule } from "@angular/common";
 
     selector: 'sy-track',
     standalone: true,
-    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent ],
+    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent ],
     template: `
 
-    <div class="track-wrapper" (wheel)="onScroll($event)" (click)="onClick($event)">
+    <div class="track-wrapper" (click)="onClick($event)">
 
         <div class="node track-options" [style]="'background-color:' + color" [class.playing]="false" > <!-- todo - not reactive -->
 
@@ -45,6 +46,7 @@ import { CommonModule } from "@angular/common";
                 [min]="-70"
                 [max]="6"
                 (onChange)="onVolumeChange($event)" />
+
 
             <!-- <LevelMeter output={track.volumeNode} /> -->
 
@@ -456,13 +458,6 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
     saveUndo = () => {
 
         Storage.saveUndo(JSON.stringify(this.track.synthesizer.serializeOut()))
-    }
-
-    onScroll = (e) => {
-
-        // if(!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) e.preventDefault()
-
-        console.log('scroll', this.track.id)
     }
 
     onClick = (e) => {

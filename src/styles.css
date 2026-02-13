@@ -184,13 +184,14 @@
   .btn.active { 
   
     color: var(--c-y);
-  
+    mix-blend-mode: luminosity;
+  }
+  .btn.active.animationsEnabled {
+
     background-image: url('/assets/imgs/circle-monochrome.gif');
     background-size: 1000%;
     background-position: center;
     background-repeat: no-repeat;
-  
-    mix-blend-mode: luminosity;
   }
   .btn.deactivated {
   

@@ -104,10 +104,6 @@ import { CommonModule } from "@angular/common";
 
         color: var(--c-y);
     }
-
-
-
-
 `,
 })
 export class LevelMeterComponent implements AfterViewInit, OnDestroy {

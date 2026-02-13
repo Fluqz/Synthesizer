@@ -214,13 +214,7 @@ export class KnobComponent {
     /** Maximum possible value */
     @Input('max') max: number = 1
 
-    private _steps: number
-    /** The steps to go. Default is abs(max - min) / 360 */
-    @Input('steps') set steps(steps: number) {
-
-        this._steps = Math.abs(this.max - this.min) / 360
-    }
-
+    public steps: number = 100
 
     @Output('onChange') onChange: EventEmitter<number> = new EventEmitter()
 
@@ -323,17 +317,16 @@ export class KnobComponent {
     /** Set value between 0 - 1 */
     setValue = (v: number) => {
 
-        // console.log('val', v, Number.isNaN(v))
+        console.log('val', v, Number.isNaN(v))
         if(Number.isNaN(v)) return
         
-        this.value = v
+        // this.value = v
 
         // value = M.map(0, 1, min, max, value)
 
-
         // console.log('Change', name, 'to :', value, initValue)
 
-        this.value = M.clamb(this.min, this.max, this.value)
+        this.value = M.clamb(this.min, this.max, v)
         
         this.getAngle()
 
@@ -417,13 +410,14 @@ export class KnobComponent {
 
         const val = M.clamb(this.min, this.max, this.dragInitValue + (distance * this.steps))
 
+        console.log(val)
         this.setValue(val)
     }
 
     /** On 'mouseup' event callback */
     onPointerUp = (e: PointerEvent) => { 
 
-        this.isMouseDown = false 
+        this.isMouseDown = false
 
         if(this.drag) return
 
@@ -433,7 +427,7 @@ export class KnobComponent {
     /** On 'keydown' event callback */
     onKeyDown = (e: KeyboardEvent) => {
 
-        if(e.key === 'Meta') this.steps *= 40
+        // if(e.key === 'Meta') this.steps *= 40
         // if(e.key === 'Meta') steps /= 4
 
         this.isKeyDown = true
@@ -442,7 +436,7 @@ export class KnobComponent {
     onKeyUp = (e: KeyboardEvent) => {
 
 
-        if(e.key === 'Meta') this.steps /= 40
+        // if(e.key === 'Meta') this.steps /= 40
         // if(e.key === 'Meta') steps *= 4
 
         this.isKeyDown = false
@@ -450,15 +444,20 @@ export class KnobComponent {
     onScroll = (e: any) => {
 
         if(!e.shiftKey) return
-
+        
         e.preventDefault()
         e.stopPropagation()
-
+        
+        
         // if(e.wheelDelta > 0) setValue(M.clamb(min, max, M.map(min, max, 0, 1, value - ((1 / steps) * Math.round(Math.abs(e.wheelDelta / 5))))))
         // else if(e.wheelDelta < 0) setValue(M.clamb(min, max, M.map(min, max, 0, 1, value + ((1 / steps) * Math.round(Math.abs(e.wheelDelta / 5))))))
+        
+        // console.log('knob', this.min, this.max, this.value, this.steps, Math.round(Math.abs(e.wheelDelta)))
 
-        if(e.wheelDelta > 0) this.setValue(M.clamb(this.min, this.max, this.value - (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
-        else if(e.wheelDelta < 0) this.setValue(M.clamb(this.min, this.max, this.value + (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
+        // if(e.wheelDelta > 0) this.setValue(M.clamb(this.min, this.max, this.value - (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
+        // else if(e.wheelDelta < 0) this.setValue(M.clamb(this.min, this.max, this.value + (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
+            
+
     }
 
     getTransformStyle() {
@@ -471,9 +470,7 @@ export class KnobComponent {
         this.initValue = this.value
         this.getAngle()
 
-        // @ts-ignore
-        this.wheelObservable = fromEvent(this.knobDOM, 'wheel', { bubbles: false })
-        this.wheelObservable.subscribe(this.onScroll.bind(this))
+        this.knobDOM.addEventListener('wheel', this.onScroll.bind(this))
     }
 
     ngOnDestroy() {

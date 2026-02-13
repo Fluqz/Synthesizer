@@ -34,7 +34,7 @@ export interface ISession {
 
 export interface ISynthesizerSerialization extends ISerialization {
 
-    presets: IPreset[]
+    userPresets: IPreset[]
     currentSession: ISession
 }
 
@@ -725,10 +725,8 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
 
         this.destroy()
         
-        if(o.presets && o.presets.length > 0) {
-            
-            this.presetManager.setPresets(o.presets)
-        }
+        // Always call setPresets to ensure defaults + loaded presets
+        this.presetManager.setPresets(o.userPresets || [])
 
         const c = o.currentSession
 
@@ -739,7 +737,7 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
         
         return {
 
-            presets: this.presetManager.getPresets(),
+            userPresets: this.presetManager.getUserPresets(),
             currentSession: this.getSessionObject()
         }
     }

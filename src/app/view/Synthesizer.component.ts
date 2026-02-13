@@ -6,20 +6,22 @@ import { Node as _Node } from '../synthesizer/nodes/'
 import { Synthesizer, type Channel, type ComponentType } from '../synthesizer/synthesizer'
 import { G } from '../globals';
 import { Storage } from '../core/storage';
-import { AfterContentInit, AfterViewInit, Component, HostListener, Input } from '@angular/core'
+import { AfterContentInit, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, Input } from '@angular/core'
 import { DropdownComponent } from './Dropdown.component'
 import { KnobComponent } from './Knob.component'
 import { TrackComponent } from './Track.component'
 import { SequencerComponent } from './Sequencer.component'
 import { KeyComponent } from './Key.component'
+import { LevelMeterComponent } from './LevelMeter.component'
 import { CommonModule } from '@angular/common'
 import { Key } from '../synthesizer/key'
 
 @Component({
 
-    selector: 'sy-synthesizer',
-    standalone: true,
-    imports: [ CommonModule, DropdownComponent, KnobComponent, TrackComponent, SequencerComponent, KeyComponent ],
+     selector: 'sy-synthesizer',
+     standalone: true,
+     changeDetection: ChangeDetectionStrategy.OnPush,
+     imports: [ CommonModule, DropdownComponent, KnobComponent, TrackComponent, SequencerComponent, KeyComponent, LevelMeterComponent ],
     template: `
 
 
@@ -62,7 +64,7 @@ import { Key } from '../synthesizer/key'
 
                 <div>
                     <!-- <label for="savePreset">Save Preset</label> -->
-                    <input id="save-preset" type="text" placeholder="Save Preset" name="savePreset" [value]="presetInputValue" (keydown)="onPresetInput($event)"/>
+                    <input id="save-preset" type="text" placeholder="Save Preset" name="savePreset" [(ngModel)]="presetInputValue" (keydown)="onPresetInput($event)"/>
                 </div>
                 
                     <div *ngIf="presets.length > 0" id="load-preset">
@@ -256,7 +258,7 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
     get isPlaying() : boolean { return G.isPlaying }
 
 
-    constructor() {
+    constructor(private cdr: ChangeDetectorRef) {
 
     }
 
@@ -267,9 +269,19 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         this.synthesizer.onComponentsChange.subscribe((c) => {
 
             this.components = c
+            this.cdr.markForCheck()
         })
 
-        // this.setPresets()
+        // Subscribe to all preset changes (save, delete, load from storage)
+        this.synthesizer.presetManager.presetsChanged.subscribe(() => {
+            this.setPresets()
+            this.cdr.markForCheck()
+        })
+
+        this.setPresets()
+
+        // Force initial change detection after loading
+        setTimeout(() => this.cdr.detectChanges(), 0)
         
         // Events
         // document.addEventListener('keydown', onKeyDown, false)
@@ -278,7 +290,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     ngAfterContentInit(): void {
 
-        this.setPresets()
     }
 
     addTrack() {
@@ -446,7 +457,7 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
             console.log('RESET - SHIFT -> LOAD DEFAULT')
 
-            this.synthesizer.presetManager.loadPreset(this.synthesizer.presetManager.default)
+            this.synthesizer.presetManager.loadPreset('default')
 
             this.scrollToBottom()
         }
@@ -473,7 +484,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
     /** Keydown event */
     onKeyDown(e) {
 
-        console.log('YOOO', e.key == ' ')
         if(!e) return
         if(e.repeat) return
         if(e.target instanceof HTMLInputElement) return
@@ -506,32 +516,40 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
         e.stopPropagation()
 
-        if(e.key == 'Enter' && e.target.value != null) {
+        if(e.key == 'Enter' && e.target.value) {
 
-            this.synthesizer.presetManager.savePreset(this.presetInputValue)
+            const name = e.target.value
+            const existing = this.synthesizer.presetManager.getPresetByName(name)
+            
+            if(existing) {
+                // Preset already exists, ask for confirmation
+                const isDefault = this.synthesizer.presetManager.isDefaultPreset(name)
+                const message = isDefault 
+                    ? `⚠️ "${name}" is a default app preset. Overwrite it?`
+                    : `⚠️ Preset "${name}" already exists. Overwrite it?`
+                
+                const confirmed = confirm(message)
+                if(!confirmed) return
+                
+                this.synthesizer.presetManager.overwritePreset(name)
+                this.presetInputValue = ''
+            } else if(this.synthesizer.presetManager.savePreset(name)) {
+                this.presetInputValue = ''
+            }
         }
-
-        this.synthesizer = this.synthesizer
-
-        this.setPresets()
-
-        this.synthesizer = this.synthesizer
     }
 
-    onChangePresets(e) {
+    onChangePresets(e: InputEvent) {
 
         const isMuted = this.synthesizer.isMuted
+        const presetName = (e.target as HTMLSelectElement).value
 
         this.synthesizer.mute(true)
 
         setTimeout(() => {
 
-            this.synthesizer.presetManager.loadPresetFromName(e.detail.target.value)
+            this.synthesizer.presetManager.loadPreset(presetName)
             
-            this.synthesizer = this.synthesizer
-
-            this.synthesizer.presetManager = this.synthesizer.presetManager
-
             this.scrollToBottom()
 
             setTimeout(() => {
@@ -550,8 +568,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         this.synthesizer.presetManager.removePreset(e.detail.target.value)
 
         this.synthesizer = this.synthesizer
-
-        this.setPresets()
 
         this.saveUndo()
     }

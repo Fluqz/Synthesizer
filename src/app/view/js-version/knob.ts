@@ -155,8 +155,6 @@ export class Knob {
     rotateDOM() {
 
         this.knobDOM.style.transform = 'rotate('+Math.round(this.angle*(180/Math.PI))+'deg)';
-
-        // window.setTimeout(() => { this.knobDOM.innerHTML = '' }, 200)
     }
 
     /** On 'mousedown' event callback */

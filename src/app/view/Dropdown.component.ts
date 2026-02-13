@@ -3,7 +3,7 @@
 
 
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from "@angular/core";
 
 
 @Component({
@@ -20,7 +20,7 @@ import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@
 
         <div class="dropdown-options">
 
-            <select *ngIf="options" class="dropdown-select" name="dropdown" [value]="value" (change)="onChange($event)">
+            <select *ngIf="options" class="dropdown-select" name="dropdown" [value]="value" (change)="onChange($event)" (blur)="onBlur($event)">
 
                     <option *ngFor="let o of options" class="dropdown-option" [value]="o">
 
@@ -157,13 +157,33 @@ export class DropdownComponent {
         return this._inputElement.nativeElement
     }
 
-    constructor() {
+    @ViewChild('dropdown') dropdown: ElementRef
+
+    constructor(private elementRef: ElementRef) {
 
         // public initValue = value
 
 
         // if(value == undefined && options && options.length > 0) value = options[0]
 
+    }
+
+    @HostListener('document:click', ['$event'])
+    onDocumentClick(event: MouseEvent) {
+        // If click is outside this dropdown, blur it
+        if(!this.elementRef.nativeElement.contains(event.target)) {
+            const select = this.elementRef.nativeElement.querySelector('select')
+            if(select) select.blur()
+        }
+    }
+
+    @HostListener('document:keydown', ['$event'])
+    onDocumentKeydown(event: KeyboardEvent) {
+        // Blur select if it has focus when any key is pressed outside
+        const select = this.elementRef.nativeElement.querySelector('select')
+        if(select && document.activeElement === select) {
+            select.blur()
+        }
     }
 
 
@@ -182,6 +202,12 @@ export class DropdownComponent {
 
         this.onSelect.next(e)
 
+        target.blur()
+    }
+
+    public onBlur = (e: FocusEvent) => {
+        
+        const target = e.target as HTMLSelectElement
         target.blur()
     }
 

@@ -12,116 +12,190 @@ export interface IPreset extends ISession {
 
 export class PresetManager {
 
-    private presets: IPreset[]
+     /** All presets (defaults + user created) */
+     private presets: IPreset[]
+     
+     /** Track which presets are from DEFAULT_PRESETS for filtering on save */
+     private defaultPresetNames: Set<string>
 
-    private synthesizer: Synthesizer
+     private synthesizer: Synthesizer
 
-    private presetID = 0
+     private nextPresetID = 1000
 
-    public default: IPreset
+     public readonly default: IPreset
 
-    public onSavePreset: Subject<IPreset>
-    public onRemovePreset: Subject<IPreset>
+     /** Emits whenever the preset list changes (save, delete, or load from storage) */
+     public readonly presetsChanged = new Subject<void>()
 
-    constructor(synthesizer: Synthesizer) {
+     constructor(synthesizer: Synthesizer) {
 
-        this.synthesizer = synthesizer
+          this.synthesizer = synthesizer
+          this.presets = []
+          this.defaultPresetNames = new Set()
 
-        this.presets = []
+          // Initialize default preset (uses negative ID to avoid collisions)
+          // @ts-ignore - DEFAULT_SESSION type mismatch
+          this.default = {
+              id: -1,
+              name: 'default',
+              channel: 0,
+              bpm: 120,
+              ...DEFAULT_SESSION.currentSession
+          }
 
-        // @ts-ignore
-        this.default = {
-            name: 'default',
-            id: -1,
-            channel: 0,
-            bpm: 120,
-            ...DEFAULT_SESSION.currentSession
-        }
+          // Load default presets on initialization
+          for(let p of DEFAULT_PRESETS) {
+              this._addPreset(p)
+              this.defaultPresetNames.add(p.name)
+          }
+      }
 
-        this.onSavePreset = new Subject()
-        this.onRemovePreset = new Subject()
+     /** Get all presets */
+     getPresets() : IPreset[] { 
+         return this.presets 
+     }
 
-        for(let p of DEFAULT_PRESETS) this.addPreset(p)
-    }
+     /** Get only user-created presets (for serialization to storage) */
+     getUserPresets() : IPreset[] {
+         return this.presets.filter(p => !this.defaultPresetNames.has(p.name))
+     }
 
-    getPresets() { return this.presets }
+     /** Get preset by name */
+     getPresetByName(name: string) : IPreset | null {
 
-    savePreset(name: string) {
+         return this.presets.find(p => p.name === name) || null
+     }
 
-        for(let p of this.presets) { if(p.name === name) return false }
+     /** Save current session as a new preset */
+     savePreset(name: string) : boolean {
 
-        const p: IPreset = this.synthesizer.getSessionObject() as IPreset
-        p.id = this.presetID++
-        p.name = name
+          const existing = this.getPresetByName(name)
 
-        this.presets.push(p)
+          const preset: IPreset = this.synthesizer.getSessionObject() as IPreset
+          preset.id = this.nextPresetID++
+          preset.name = name
 
-        this.onSavePreset.next(this.presets[this.presets.length-1])
+          this.presets.push(preset)
+          this.presetsChanged.next()
 
-        return true
-    }
+          return true
+     }
 
-    addPreset(preset: IPreset) {
+     /** Check if a preset name is a default app preset */
+     isDefaultPreset(name: string) : boolean {
+         return this.defaultPresetNames.has(name)
+     }
 
-        if(this.presets.find(p => p.name == preset.name)) return
+     /** Overwrite an existing preset (used for user confirmation) */
+     overwritePreset(name: string) : boolean {
+         
+         const index = this.presets.findIndex(p => p.name === name)
+         if(index === -1) return false
+         
+         const preset: IPreset = this.synthesizer.getSessionObject() as IPreset
+         preset.id = this.presets[index].id
+         preset.name = name
+         
+         this.presets[index] = preset
+         this.presetsChanged.next()
+         
+         return true
+     }
 
-        this.presets.push(preset)
-    }
+     /** Add an existing preset (used during deserialization) */
+     private _addPreset(preset: IPreset) : void {
 
-    loadPresetFromName(name: string) : boolean {
+          if(this.getPresetByName(preset.name)) {
+              console.debug(`Preset "${preset.name}" already exists, skipping`)
+              return
+          }
 
-        let preset = this.presets.find(p => p.name == name)
+          // Track highest ID to avoid collisions
+          if(preset.id >= this.nextPresetID) {
+              this.nextPresetID = preset.id + 1
+          }
 
-        if(!preset) return false
+          this.presets.push(preset)
+     }
 
-        this.synthesizer.releaseNotes()
-        this.synthesizer.stopSequencers()
+     /** Load a preset by name and restore synthesizer state */
+     loadPreset(name: string) : boolean {
 
-        this.synthesizer.serializeIn({
-            currentSession: preset,
-            presets: this.presets
-        })
+         const preset = this.getPresetByName(name)
 
-        return true
-    }
+         if(!preset) {
+             console.warn(`Preset "${name}" not found`)
+             return false
+         }
 
-    loadPreset(preset: IPreset) : boolean {
+         this.synthesizer.releaseNotes()
+         this.synthesizer.stopSequencers()
 
-        if(!preset) return false
+         // Load session without triggering serializeIn (doesn't change preset list)
+         this.synthesizer.loadSessionObject(preset)
 
-        this.synthesizer.serializeIn({
-            currentSession: preset,
-            presets: this.presets
-        })
+         return true
+     }
 
-        return true
-    }
+     /** Delete a preset by name */
+     removePreset(name: string) : boolean {
 
-    removePreset(name: string) : boolean {
+          const index = this.presets.findIndex(p => p.name === name)
 
-        if(!name) return false
+          if(index === -1) {
+              console.warn(`Preset "${name}" not found`)
+              return false
+          }
 
-        for(let i = 0; i < this.presets.length; i++) {
+          this.presets.splice(index, 1)
+          this.presetsChanged.next()
 
-            if(this.presets[i].name == name) {
+          return true
+      }
 
-                this.presets.splice(i, 1)
-                this.onRemovePreset.next(this.presets[i])
-            }
-        }
+     /** Replace all presets (used during deserialization from storage) */
+     setPresets(loadedPresets: IPreset[]) : void {
 
-        return true
-    }
+         // Start fresh with defaults
+         this.presets = [...DEFAULT_PRESETS.map(p => ({...p}))]
 
-    setPresets(presets: IPreset[]) {
+         // Add loaded presets, overwriting defaults with same name
+         const overwrittenPresets: string[] = []
+         for(let p of loadedPresets) {
+             const defaultIndex = this.presets.findIndex(dp => dp.name === p.name && this.defaultPresetNames.has(dp.name))
+             
+             if(defaultIndex !== -1) {
+                 // Overwrite default preset with loaded version
+                 this.presets[defaultIndex] = p
+                 overwrittenPresets.push(p.name)
+                 console.warn(`Overwriting default preset "${p.name}" with saved version`)
+             } else {
+                 this._addPreset(p)
+             }
+         }
 
-        this.presets = presets
-    }
+         // Alert user if defaults were overwritten
+         if(overwrittenPresets.length > 0) {
+             console.warn(`⚠️ Restored custom versions of these app presets: ${overwrittenPresets.join(', ')}`)
+         }
 
-    reset() {
+         // Update ID tracker
+         for(let p of loadedPresets) {
+             if(p.id >= this.nextPresetID) {
+                 this.nextPresetID = p.id + 1
+             }
+         }
 
-        this.presets.length = 0
-        for(let p of DEFAULT_PRESETS) this.addPreset(p)
-        this.presetID = 0
-    }
-}
+         this.presetsChanged.next()
+     }
+
+     /** Reset to default presets only */
+     reset() : void {
+
+          this.presets.length = 0
+          this.nextPresetID = 1000
+          
+          for(let p of DEFAULT_PRESETS) this._addPreset(p)
+          this.presetsChanged.next()
+      }
+     }

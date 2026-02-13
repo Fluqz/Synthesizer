@@ -173,19 +173,20 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     }
 
     ngAfterViewInit(): void {
-        
+         
 
-        /** LOAD FROM LOCAL STORAGE */
-        const storageData = Storage.load()
+         /** LOAD FROM LOCAL STORAGE */
+         const storageData = Storage.load()
 
-        if(storageData) this.serializeIn(storageData, true)
+         console.log('LOAD FROM STORAGE', storageData)
+         if(storageData) this.serializeIn(storageData, true)
 
-        else this.serializeIn(DEFAULT_SESSION, false)
+         else this.serializeIn(DEFAULT_SESSION, false)
 
-        // Save Undo
-        Storage.saveUndo(storageData)
+         // Save Undo
+         Storage.saveUndo(storageData)
 
-        // Change Background Colors
+         // Change Background Colors
         let colors = JSON.parse(JSON.stringify(COLORS))
         colors.sort(() =>  Math.ceil((Math.random() * 2) - 1) )
         
@@ -245,6 +246,8 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     }
 
     ngOnDestroy() {
+
+        console.log('ngOnDestroy', )
 
         // if(IID) clearInterval(IID)
 
@@ -352,6 +355,8 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     
         let o = this.synthesizer.serializeOut()
     
+        console.log('serializeOut', o)
+
         return JSON.stringify(o)
     }
 
@@ -415,10 +420,10 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     }
 
     // ON UNLOAD
-    @HostListener('window:onbeforeunload', ['$event'])
+    @HostListener('window:beforeunload', ['$event'])
     private onbeforeunload = () => {
 
-        // Storage.save(this.serializeOut())
+        Storage.save(this.serializeOut())
 
         this.synthesizer.mute(true)
 

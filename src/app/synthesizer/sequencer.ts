@@ -318,7 +318,7 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
 
         if(this.synthesizer.getActiveSequencers().length == 0) Sequencer.startTime = null
 
-        console.log('stop', Sequencer.startTime, this.synthesizer.getActiveSequencers().length)
+        // console.log('stop', Sequencer.startTime, this.synthesizer.getActiveSequencers().length)
     }
 
     destroy() {
