@@ -24,6 +24,21 @@ export const convertNoteLength = (n: NoteLength) => {
     }
 }
 
+/**
+ * Timeline drag state for a single drag operation
+ */
+export interface DragState {
+    active: boolean
+    type: 'move' | 'resize-start' | 'resize-end' | null
+    noteId: number | null
+    startClientX: number
+    startClientY: number
+    startTime: number
+    endTime: number
+    dragOffsetX: number
+    handle: number  // 0 = start, 1 = end
+}
+
 @Component({
 
     selector: 'sy-timeline',
@@ -73,11 +88,11 @@ export const convertNoteLength = (n: NoteLength) => {
 
                         <sy-note [note]="getSequenceObject(note)"
                                 (pointerdown)="notePointerDown($event, note)"
+                                (onDelete)="removeNote(note)"
                                 [sequencer]="sequencer"
                                 [timelineRect]="timelineRect"
                                 [yPos]="noteYArray[i]"
-                                [height]="noteHeight"
-                                (onDelete)="removeNote($event.target)">
+                                [height]="noteHeight">
                             
                                             
                             <div class="drag-handle drag-start"
@@ -210,11 +225,11 @@ export const convertNoteLength = (n: NoteLength) => {
 
 `,
     host: {
-
-        // '(pointermove)': 'notePointerMove($event)',
+        '(document:pointermove)': 'resizeNoteMoveHandler($event)',
+        '(document:pointerup)': 'resizeNoteEndHandler($event)',
     }
-})
-export class TimelineComponent implements OnChanges {
+    })
+    export class TimelineComponent implements OnChanges {
 
     /** Instance of the Sequencer */
     @Input('sequencer') sequencer: Sequencer
@@ -240,6 +255,26 @@ export class TimelineComponent implements OnChanges {
         this.update()
     }
     private _bars: number = 1
+
+    /** Unified drag state management */
+    private dragState: DragState = {
+        active: false,
+        type: null,
+        noteId: null,
+        startClientX: 0,
+        startClientY: 0,
+        startTime: 0,
+        endTime: 0,
+        dragOffsetX: 0,
+        handle: 0
+    }
+
+    /** 
+     * Grid quantization in bar units
+     * Set to null to disable quantization
+     * Common values: 0.0625 (1/16), 0.125 (1/8), 0.25 (1/4)
+     */
+    private gridQuantize: number | null = null  // null = no snapping
 
     barWidth: number = 0
     barPositionArray: number[] = []
@@ -448,7 +483,7 @@ export class TimelineComponent implements OnChanges {
     /** DblClick Note Event  */
     removeNote(note: SequenceObject) {
 
-        if(this.isDragNoteResize) return
+        if(this.dragState.active && this.dragState.type?.includes('resize')) return
 
         this.sequencer.removeNote(note.id)
 
@@ -518,7 +553,7 @@ export class TimelineComponent implements OnChanges {
         
         if(!this.isPointerDown) return
         if(!this.noteEle) return
-        if(this.isDragNoteResize) return
+        if(this.dragState.active && this.dragState.type?.includes('resize')) return
         if(!this.selectedNote) return
 
         console.log('notePointerMove')
@@ -530,24 +565,36 @@ export class TimelineComponent implements OnChanges {
         const stop = this.timelineRect.right
         const start = 0
 
-        // Horizontal drag
+        // Calculate position maintaining cursor offset
+        // This ensures the note stays under the cursor while dragging
         let posX = e.clientX - this.timelineRect.left - this.clickOffsetX
 
-        // Right boundary
-        if(this.timelineRect.left + posX + this.noteRect.width > stop) posX = stop - this.noteRect.width - this.timelineRect.left
+        // Right boundary check
+        if(posX + this.noteRect.width > width) {
+            posX = width - this.noteRect.width
+        }
         
-        let xInPercent = posX / width
-
-        let time = Math.round(this.bars * xInPercent * 1000) / 1000
+        // Left boundary check
+        if(posX < 0) {
+            posX = 0
+        }
         
-        // Left boundary
-        if(time < start) time = start
+        // Convert pixel position to time in bars
+        const xPercent = posX / width
+        let time = xPercent * this._bars
 
-        if(this.alteredSequenceObject.time != time) {
+        // Quantize to grid if Shift is NOT held and quantization is enabled
+        if(!e.shiftKey && this.gridQuantize !== null) {
+            const gridInBars = this.gridQuantize
+            time = Math.round(time / gridInBars) * gridInBars
+        }
 
+        // Only update if time actually changed
+        const currentTime = typeof this.alteredSequenceObject.time === 'number' ? this.alteredSequenceObject.time : 0
+        if(Math.abs(currentTime - time) > 0.0001) {
             this.alteredSequenceObject.time = time
             this.cdr.detectChanges()
-        } 
+        }
 
         this.updateWrapperHeight()
     }
@@ -563,8 +610,7 @@ export class TimelineComponent implements OnChanges {
 
     notePointerUp = (e) => {
 
-        if(this.isDragNoteResize) return
-
+        if(this.dragState.active && this.dragState.type?.includes('resize')) return
 
         console.log('notePointerUp')
 
@@ -601,127 +647,124 @@ export class TimelineComponent implements OnChanges {
             this.noteRect = null
 
             this.isNoteDrag = false
+            
+            // Update view after drag ends
+            this.cdr.markForCheck()
         }
     }
 
 
-    private isDragNoteResize = false
-    private startTime: number = 0
-    private endTime: number = 0
-    private dragOffset: number = 0
-    private handle = 0
-    /** Resizing note - Mouse down event */
-    resizeNoteStartHandler = (e, note: SequenceObject, which: 'start' | 'end') => {
-        console.log('resizeNoteStartHandler', note)
+    /**
+     * Start resizing a note (handle pointerdown)
+     * @param e - Pointer event
+     * @param note - Note being resized
+     * @param which - 'start' or 'end' handle
+     */
+    resizeNoteStartHandler = (e: PointerEvent, note: SequenceObject, which: 'start' | 'end') => {
 
         e.stopPropagation()
 
-        this.isDragNoteResize = true
+        const target = e.currentTarget as HTMLElement
+        this.dragState = {
+            active: true,
+            type: which === 'start' ? 'resize-start' : 'resize-end',
+            noteId: note.id,
+            startClientX: e.clientX,
+            startClientY: e.clientY,
+            startTime: Tone.Time(note.time).toSeconds(),
+            endTime: Tone.Time(note.time).toSeconds() + Tone.Time(note.length).toSeconds(),
+            dragOffsetX: e.clientX - target.getBoundingClientRect().left,
+            handle: which === 'start' ? 0 : 1
+        }
 
         this.selectedNote = note
-
-        this.alteredSequenceObject = {
-
-            id: this.selectedNote.id,
-            note: this.selectedNote.note,
-            time: this.selectedNote.time,
-            length: this.selectedNote.length,
-            velocity: this.selectedNote.velocity
-        }
-
-        this.startTime = Tone.Time(this.selectedNote.time).toSeconds()
-        this.endTime = this.startTime + Tone.Time(this.selectedNote.length).toSeconds()
-
-        this.dragOffset = e.pageX - e.target.getBoundingClientRect().left
-
-        this.handle = (which == 'start' ? 0 : 1)
+        this.alteredSequenceObject = { ...note }
     }
 
-    /** Resizing note - Mouse move event */
-    resizeNoteMoveHandler = (e) => {
+    /**
+     * Handle resize drag movement
+     * Hold Shift to bypass quantization (free-form resize)
+     */
+    resizeNoteMoveHandler = (e: PointerEvent) => {
 
-        // e.stopPropagation()
-
-        if(!this.isDragNoteResize) return
-        
+        if(!this.dragState.active || !this.dragState.type?.includes('resize')) return
         if(!this.selectedNote) return
-        
-        console.log('resizeNoteMoveHandler')
 
-        const width = this.timelineRect.width
-        const posX = e.clientX - this.timelineRect.left + (this.handle == 0 ? -this.dragOffset : this.dragOffset)
+        const deltaX = e.clientX - this.dragState.startClientX
+        // Convert pixels to bar units
+        const pixelsPerBar = this.timelineRect.width / this._bars
+        const deltaInBars = deltaX / pixelsPerBar
 
-        let xInPercent = posX / width
+        let newStartTime = this.dragState.startTime
+        let newEndTime = this.dragState.endTime
+        const minDuration = 0.05  // Minimum note length in bars
 
-        let time = Math.round(this.bars * xInPercent * 1000) / 1000
-
-        let l: Tone.Unit.Time
-        if(this.handle == 0) {
-
-            if(time < 0) time = 0
+        if(this.dragState.handle === 0) {
+            // Dragging start handle
+            newStartTime = this.dragState.startTime + deltaInBars
+            newStartTime = Math.max(0, Math.min(newStartTime, newEndTime - minDuration))
             
-            l = this.endTime - time
+            // Apply quantization if enabled and Shift not held
+            if(!e.shiftKey && this.gridQuantize !== null) {
+                newStartTime = Math.round(newStartTime / this.gridQuantize) * this.gridQuantize
+            }
+        } else {
+            // Dragging end handle
+            newEndTime = this.dragState.endTime + deltaInBars
+            newEndTime = Math.max(newStartTime + minDuration, newEndTime)
             
-            if(l < 0) time = this.endTime
-            
-        }
-        else {
-
-            if(time < 0) time = 0
-
-            this.endTime = time
-
-            l = this.endTime - this.startTime
-
-            time = Tone.Time(this.selectedNote.time).toSeconds()
-        }
-
-        this.alteredSequenceObject.time = time
-        
-        if(this.alteredSequenceObject.time != l) {
-
-            this.alteredSequenceObject.length = l
-            this.cdr.detectChanges()
+            // Apply quantization if enabled and Shift not held
+            if(!e.shiftKey && this.gridQuantize !== null) {
+                newEndTime = Math.round(newEndTime / this.gridQuantize) * this.gridQuantize
+            }
         }
 
-        console.log('l', l)
+        this.alteredSequenceObject.time = newStartTime
+        this.alteredSequenceObject.length = newEndTime - newStartTime
+
+        // Update view during drag
+        this.cdr.detectChanges()
     }
 
-    /** Resizing note - Mouse up event */
-    resizeNoteEndHandler = (e) => {
+    /**
+     * End resize operation
+     */
+    resizeNoteEndHandler = (e: PointerEvent) => {
 
-        if(!this.isDragNoteResize) return
-        
-        console.log('resizeNoteEndHandler', this.selectedNote, this.alteredSequenceObject)
+        if(!this.dragState.active || !this.dragState.type?.includes('resize')) return
 
-        if(this.selectedNote && this.selectedNote.id == this.alteredSequenceObject.id) {
-
-            console.log('resizeNoteEndHandler update !!PONASFO')
+        // Commit the change
+        if(this.selectedNote && this.alteredSequenceObject) {
             this.sequencer.updateNote(
-                this.selectedNote.id = this.alteredSequenceObject.id, 
-                this.selectedNote.note = this.alteredSequenceObject.note, 
-                this.selectedNote.time = this.alteredSequenceObject.time, 
-                this.selectedNote.length = this.alteredSequenceObject.length, 
-                this.selectedNote.velocity = this.alteredSequenceObject.velocity
+                this.selectedNote.id,
+                this.alteredSequenceObject.note,
+                this.alteredSequenceObject.time,
+                this.alteredSequenceObject.length,
+                this.alteredSequenceObject.velocity
             )
-            
+
             this.updateWrapperHeight()
-            
             this.saveUndo()
         }
 
+        // Reset drag state
+        this.dragState = {
+            active: false,
+            type: null,
+            noteId: null,
+            startClientX: 0,
+            startClientY: 0,
+            startTime: 0,
+            endTime: 0,
+            dragOffsetX: 0,
+            handle: 0
+        }
 
-        this.isDragNoteResize = false
-        
         this.selectedNote = null
         this.alteredSequenceObject = null
         
-        this.dragOffset = 0
-        
-        this.startTime = 0
-        this.endTime = 0
-
-        // this.cdr.detectChanges()
+        // Update view after drag ends
+        this.cdr.markForCheck()
     }
 
 
@@ -822,6 +865,36 @@ export class TimelineComponent implements OnChanges {
 
         if(this.rows < 3) return this.wrapperHeight = 100
         return this.wrapperHeight = this.rows * 33
+    }
+
+    /**
+     * Quantize time value in bars to nearest grid position
+     * @param timeInBars - Time in bar units
+     * @returns Quantized time
+     */
+    quantizeToGrid(timeInBars: number): number {
+        
+        if(this.gridQuantize === null) return timeInBars
+        return Math.round(timeInBars / this.gridQuantize) * this.gridQuantize
+    }
+
+    /**
+     * Calculate row position based on overlapping notes
+     * Notes that overlap get stacked vertically
+     */
+    calculateNoteRow(note: SequenceObject): number {
+
+        const overlappingNotes = this.getYOverlappingNotesByNote(note)
+        
+        // Sort overlapping notes by time
+        overlappingNotes.sort((a, b) => {
+            const timeA = Tone.Time(a.time).toSeconds()
+            const timeB = Tone.Time(b.time).toSeconds()
+            return timeA - timeB
+        })
+        
+        // Find this note's position in the overlap group
+        return overlappingNotes.indexOf(note)
     }
 
     saveUndo = () => {

@@ -65,6 +65,7 @@ import { Key } from "../synthesizer/key";
         z-index: 0;
 
         border: .5px solid var(--c-b);
+        box-sizing: border-box;
 
     }
     .key.black {

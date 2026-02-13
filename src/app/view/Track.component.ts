@@ -195,7 +195,6 @@ import { CommonModule } from "@angular/common";
 
         background-color: var(--c-w);
         color: var(--c-b);
-        transition: .4s background-color, .4s color;
 
         cursor: pointer;
     }
@@ -232,7 +231,6 @@ import { CommonModule } from "@angular/common";
         background-color: var(--c-w);
         color: var(--c-b);
 
-        transition: .2s background-color, .2s color;
 
         cursor: pointer;
     }

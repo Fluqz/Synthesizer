@@ -15,58 +15,46 @@ import { CommonModule } from "@angular/common";
     imports: [ CommonModule ],
     template: `
         
-<div *ngIf="sequencer != undefined" class="note-wrapper">
-
-    @if(getNoteWidth() < 30) {
-
-        <div class="edit-note"
-                [style.top.px]="yPos"
-                [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)">
-
-            <div class="btn" 
-                    title="Note - Click to increase; Shift - Click to decrease" 
-                    (pointerup)="onNoteClick($event, note)">{{ getNote(note) }}</div>
-            <div class="btn" 
-                    title="Octave - Click to increase; Shift - Click to decrease" 
-                    (pointerup)="onOctaveClick($event, note)">{{ getOctave(note) }}</div>
-        
-        </div>
-        
-    }
+    <div *ngIf="sequencer != undefined" class="note-wrapper">
 
     <div class="note" 
-            [class.selected]="isSelected == true"
-            (dblclick)="onNoteDblClick($event, note)"
-            [style.top.px]="yPos"
-            [style.height.px]="height"
-            [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
-            [style.width.px]="getNoteWidth()">
+           [class.selected]="isSelected"
+           (dblclick)="onNoteDblClick($event, note)"
+           [style.top.px]="yPos"
+           [style.height.px]="height"
+           [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
+           [style.width.px]="getNoteWidth()">
 
-        
         <ng-content></ng-content>
-        
-        
-        <div class="btn"
-                title="Note - Click to increase; Shift - Click to decrease" 
-                (pointerup)="onNoteClick($event, note)">{{ getNote(note) }}</div>
-        <div class="btn"
-                title="Octave - Click to increase; Shift - Click to decrease" 
-                (pointerup)="onOctaveClick($event, note)">{{ getOctave(note) }}</div>
-        
-        <div class="velocity" [class.changed]="velocity < 1" [style.height]="velocity * 100 + '%'">
-                            
-        <!-- <div class="drag-handle drag-velocity" 
-                (on:pointerdown)={(e) => onResizeHandlesDown(e, note, 'end')}
-                (on:pointermove)={(e) => onResizeHandlesMove(e)}
-                (on:pointerup)={(e) => onResizeHandlesUp(e)}></div> -->
 
+        <!-- Compact view (default) -->
+        <div class="note-display">
+            {{ getNote(note) }}{{ getOctave(note) }}
         </div>
+
+        <!-- Expanded view (on hover via CSS) -->
+        <div class="note-controls">
+            <div class="control-group">
+                <div class="btn note-btn"
+                        title="Note - Click to increase; Shift - Click to decrease" 
+                        (pointerup)="onNoteClick($event, note)">
+                    {{ getNote(note) }}
+                </div>
+                <div class="btn octave-btn"
+                        title="Octave - Click to increase; Shift - Click to decrease" 
+                        (pointerup)="onOctaveClick($event, note)">
+                    {{ getOctave(note) }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="velocity" [style.height]="velocity * 100 + '%'"></div>
         
     </div>
 
-</div>
+    </div>
 
-`,
+    `,
 
 styles: `
 
@@ -79,8 +67,6 @@ styles: `
 
     .note {
         z-index: 2;
-
-        /* width: 25px; */
         position: absolute;
 
         width: 50px;
@@ -90,19 +76,13 @@ styles: `
         background-color: var(--c-y);
         color: var(--c-o);
 
-        /* opacity: .5; */
-
         text-align: center;
-
-        display: inline-flex;
+        display: flex;
+        flex-direction: column;
         justify-content: center;
-        align-items: end;
+        align-items: center;
 
-
-        mix-blend-mode: unset;
-        /* border: .5px solid var(--c-w); */
-
-        overflow: hidden;
+        overflow: visible;
         cursor: grab;
     }
 
@@ -111,70 +91,119 @@ styles: `
         z-index: 4;
     }
 
-    .note.note.selected input {
-
+    .note.expanded {
+        overflow: visible;
+        z-index: 5;
     }
 
-    .note input {
+    /* Compact display - small text showing note+octave */
+    .note-display {
+        font-size: 10px;
+        font-weight: bold;
+        line-height: 1;
+        white-space: nowrap;
+        opacity: 1;
+    }
 
-        z-index: 2;
+    /* Hide compact display on hover over center area */
+    .note:hover:not(:hover .drag-handle) .note-display {
+        opacity: 0;
+        pointer-events: none;
+    }
 
-        min-width: unset;
-        width: 50px;
-        height: 25px;
+    /* Expanded controls - hidden by default, shown on hover */
+    .note-controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--c-y);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 1px;
+        padding: 2px;
+        opacity: 0;
+        pointer-events: none;
+    }
 
-        border: none;
+    /* Show expanded controls when hovering over the note */
+    .note:hover .note-controls {
+        opacity: 1;
+    }
 
-        font-size: 1rem;
+    /* Only buttons are clickable in controls, not the overlay itself */
+    .note-controls {
+        pointer-events: none;
+    }
 
-        text-align: center;
+    .note-controls .btn {
+        pointer-events: auto;
+    }
 
-        background-color: transparent;
+    /* Drag handles always on top and interactive */
+    ::ng-deep .note .drag-handle {
+        z-index: 20;
+        pointer-events: auto;
+    }
 
-        padding: 0px;
-        margin: 0px;
+    .note-controls .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        width: 100%;
     }
 
     .note .btn {
-
-        width: 15px;
-        min-width: 15px;
         z-index: 2;
-        background-color: transparent;
+        padding: 1px 2px;
+        min-width: 30px;
+        width: 50%;
+        font-size: 8px;
+        cursor: pointer;
+        color: inherit;
+        line-height: 1;
     }
-    .note .btn:hover,
-    .note .btn:active {
 
-        background: unset;
-        background-color: transparent;
+    .note .btn:hover {
+        background-color: rgba(0, 0, 0, 0.4);
         color: var(--c-b);
     }
 
+    .note .btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Resize handles on left and right edges - much larger and more visible */
     ::ng-deep .note .drag-handle {
-
         z-index: 3;
-
         position: absolute;
         top: 0px;
-
-        width: 10px;
         height: 100%;
-
+        width: 12px;
         cursor: ew-resize;
+        background: rgba(255, 255, 255, 0.2);
+        user-select: none;
+        touch-action: none;
+    }
 
-        background-color: #fff;
+    ::ng-deep .note .drag-handle:hover {
+        width: 16px;
+        background: rgba(255, 255, 255, 0.6);
+    }
 
-        opacity: .3;
+    ::ng-deep .note .drag-handle:active {
+        background: rgba(255, 255, 255, 0.9);
     }
 
     ::ng-deep .note .drag-start {
-
         left: 0px;
-
     }
 
     ::ng-deep .note .drag-end {
-
         right: 0px;
     }
 
@@ -281,52 +310,74 @@ export class NoteComponent implements OnDestroy {
         return o
     }
 
-    onNoteClick(e, note: SequenceObject) {
+    /**
+     * Change note (key) on click
+     * Click: next note, Shift+Click: previous note
+     */
+    onNoteClick(e: MouseEvent, note: SequenceObject) {
 
         e.stopPropagation()
 
-        this.currentNote = Tone.Frequency(note.note).toNote().toString()
+        const fullNote = Tone.Frequency(note.note).toNote().toString()
+        const octave = fullNote[fullNote.length - 1]
+        const currentNote = fullNote.replace(octave, '')
 
-        this.currentOctave = this.currentNote[this.currentNote.length - 1]
+        let i = Synthesizer.notes.indexOf(currentNote)
 
-        this.currentNote = this.currentNote.replace(this.currentOctave, '')
-
-        let i = Synthesizer.notes.indexOf(this.currentNote)
-
+        // Navigate note list
         if(!e.shiftKey) i++
         if(e.shiftKey) i--
 
+        // Wrap around
         if(i > Synthesizer.notes.length - 1) i = 0
         else if(i < 0) i = Synthesizer.notes.length - 1
 
-        note.note = Synthesizer.notes[i] + this.currentOctave
+        const newNote = Synthesizer.notes[i] + octave
+
+        // Update via sequencer (not direct mutation)
+        this.sequencer.updateNote(
+            note.id,
+            newNote,
+            note.time,
+            note.length,
+            note.velocity
+        )
 
         this.saveUndo()
     }
 
-    onOctaveClick(e, note: SequenceObject) {
-
-        console.log('onOctaveClick 1')
+    /**
+     * Change octave on click
+     * Click: next octave, Shift+Click: previous octave
+     */
+    onOctaveClick(e: MouseEvent, note: SequenceObject) {
 
         e.stopPropagation()
 
-        console.log('onOctaveClick 2')
+        const fullNote = Tone.Frequency(note.note).toNote().toString()
+        const octave = fullNote[fullNote.length - 1]
+        const currentNote = fullNote.replace(octave, '')
 
-        this.currentNote = Tone.Frequency(note.note).toNote().toString()
+        let i = Synthesizer.octaves.indexOf(+octave)
 
-        this.currentOctave = this.currentNote[this.currentNote.length - 1]
-
-        this.currentNote = this.currentNote.replace(this.currentOctave, '')
-
-        let i = Synthesizer.octaves.indexOf(+this.currentOctave)
-
+        // Navigate octave list
         if(!e.shiftKey) i++
         if(e.shiftKey) i--
 
+        // Wrap around
         if(i > Synthesizer.octaves.length - 1) i = 0
         else if(i < 0) i = Synthesizer.octaves.length - 1
 
-        note.note = this.currentNote + Synthesizer.octaves[i]
+        const newNote = currentNote + Synthesizer.octaves[i]
+
+        // Update via sequencer (not direct mutation)
+        this.sequencer.updateNote(
+            note.id,
+            newNote,
+            note.time,
+            note.length,
+            note.velocity
+        )
 
         this.saveUndo()
     }

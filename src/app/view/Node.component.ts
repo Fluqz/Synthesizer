@@ -208,8 +208,6 @@ import { CommonModule } from '@angular/common';
         height: 15px;
 
         z-index: 100;
-
-        transition: .4s background-color, .4s color;
     }
     .node .delete:hover {
         color: var(--c-b);
@@ -235,8 +233,6 @@ import { CommonModule } from '@angular/common';
         cursor: pointer;
 
         z-index: 100;
-
-        transition: .4s background-color, .4s color;
     }
 
     .enabled-btn {
@@ -255,8 +251,6 @@ import { CommonModule } from '@angular/common';
         border-radius: 100%;
 
         z-index: 100;
-
-        transition: .4s background-color, .4s color;
 
         background-color: var(--c-o);
         margin: 4px;
@@ -285,8 +279,6 @@ import { CommonModule } from '@angular/common';
         background-color: var(--c-w);
 
         font-size: 1.2rem;
-
-        transition: .4s background-color, .4s color, .4s opacity;
 
         z-index: 10;
     }

@@ -114,9 +114,6 @@ export const convertNoteLength = (n: NoteLength) => {
         height: auto;
 
         background-color: var(--c-b);
-
-        border: .5px solid var(--c-b);
-
     }
 
     .sequencer-menu {
@@ -191,7 +188,6 @@ export const convertNoteLength = (n: NoteLength) => {
         width: 50px;
         height: 40px;
         padding: 4px 8px;
-        border: 2px solid var(--c-w);
         border-radius: 4px;
         background-color: var(--c-b);
         color: var(--c-w);
@@ -199,7 +195,6 @@ export const convertNoteLength = (n: NoteLength) => {
         text-align: center;
         font-size: 16px;
         cursor: text;
-        transition: border-color 0.2s ease;
     }
 
     .channel-input:focus {
@@ -227,12 +222,10 @@ export const convertNoteLength = (n: NoteLength) => {
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
         color: var(--c-b);
         font-weight: bold;
         font-size: 14px;
         cursor: pointer;
-        transition: all 0.15s ease;
         user-select: none;
     }
 
