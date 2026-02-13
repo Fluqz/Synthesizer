@@ -10,6 +10,7 @@ import { AfterViewInit, Component, EventEmitter, Input, OnDestroy, Output } from
 import { TimelineComponent } from "./Timeline.component";
 import { getChannelColor } from "../core/colors";
 import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
 
 
 export const convertNoteLength = (n: NoteLength) => {
@@ -32,7 +33,7 @@ export const convertNoteLength = (n: NoteLength) => {
 
     selector: 'sy-sequencer',
     standalone: true,
-    imports: [ CommonModule, TimelineComponent ],
+    imports: [ CommonModule, TimelineComponent, FormsModule ],
     template: `
 
     <div *ngIf="sequencer != undefined" class="sequencer-wrapper">
@@ -47,14 +48,35 @@ export const convertNoteLength = (n: NoteLength) => {
 
             <div class="btn noteLength" (click)="onNoteLength($event)">{{sequencer.noteLength}}</div>
 
-            @for(cc of channels; track cc; let i = $index) {
+            <div class="channels-container">
 
-                <div class="btn" 
-                        [class.active]="cc"
-                        [style]="cc ? 'background-color:' + getChannelColor(i) : ''" 
-                        title="Channels to sequence" 
-                        (click)="activateChannel(i, cc)">{{ i }}</div>
-            }
+                <div class="channel-input-group">
+                    <input 
+                        type="number" 
+                        class="channel-input"
+                        min="0" 
+                        max="15"
+                        placeholder="+" 
+                        [(ngModel)]="channelInputValue"
+                        (keydown)="onChannelInputKeydown($event)"
+                        title="Add channel (0-15)"
+                    />
+                </div>
+
+                <div class="active-channels">
+                    @for(channelNum of sequencer.channels; track channelNum; let i = $index) {
+                        <div 
+                            class="channel-badge"
+                            [style.background-color]="getChannelColor(channelNum)"
+                            [title]="'Channel ' + channelNum + ' - Click to toggle, Double-click to remove'"
+                            (click)="toggleChannel(channelNum)"
+                            (dblclick)="removeChannel(channelNum)">
+                            {{ channelNum }}
+                        </div>
+                    }
+                </div>
+
+            </div>
 
         </div>
             
@@ -151,6 +173,78 @@ export const convertNoteLength = (n: NoteLength) => {
         color: var(--c-y);
     }
 
+    /* Channel management UI */
+    .channels-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        background-color: var(--c-b);
+    }
+
+    .channel-input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .channel-input {
+        width: 50px;
+        height: 40px;
+        padding: 4px 8px;
+        border: 2px solid var(--c-w);
+        border-radius: 4px;
+        background-color: var(--c-b);
+        color: var(--c-w);
+        font-weight: bold;
+        text-align: center;
+        font-size: 16px;
+        cursor: text;
+        transition: border-color 0.2s ease;
+    }
+
+    .channel-input:focus {
+        outline: none;
+        border-color: var(--c-y);
+        box-shadow: 0 0 4px var(--c-y);
+    }
+
+    .channel-input::placeholder {
+        color: var(--c-w);
+        opacity: 0.6;
+    }
+
+    .active-channels {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        flex: 1;
+    }
+
+    .channel-badge {
+        min-width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: var(--c-b);
+        font-weight: bold;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .channel-badge:hover {
+        transform: scale(1.1);
+        border-color: rgba(255, 255, 255, 0.7);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+    }
+
+    .channel-badge:active {
+        transform: scale(0.95);
+    }
 
 `,
 })
@@ -174,8 +268,9 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
     @Output('onDuplicate') onDuplicate: EventEmitter<Sequencer> = new EventEmitter()
     @Output('onDeleteSequencer') onDeleteSequencer: EventEmitter<Sequencer> = new EventEmitter()
     
-    /** Array of activated channels. Sequencer can play through all 8 channels simultaniously. */
-    channels: boolean[] = []
+    /** Input field value for adding new channels */
+    channelInputValue: number | null = null
+    
     /** Set default note length*/
     noteLengths: NoteLength[] = ['1', '1/2', '1/4', '1/8', '1/16', '1/32', '1/64']
 
@@ -198,14 +293,13 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
         return getChannelColor(i)
     }
 
+    /**
+     * Update the component when sequencer channels change.
+     * This is called whenever the sequencer's channel list is modified.
+     */
     updateChannel() {
-
-        // Fill channels array with booleans
-        for(let i = 0; i < Synthesizer.maxChannelCount; i++) this.channels.push(false)
-
-        // Reactive - update channel array
-        for(let i = 0; i < Synthesizer.maxChannelCount; i++) this.channels[i] = false
-        for(let c of this.sequencer.channels) this.channels[c] = true
+        // Channels are now directly shown from sequencer.channels array
+        this.channelInputValue = null
     }
 
     updateBars() {
@@ -273,25 +367,61 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
     toggleStartStop() {
         
         if(!this.sequencer.isPlaying) {
-            
             this.sequencer.start()
         }
         else this.sequencer.stop()
     }
     
-    /** Activate or deactivate channels. Channelnumber and bool */
-    activateChannel(channel: Channel, active: boolean) {
+    /**
+     * Handle Enter key in channel input field to add a new channel
+     */
+    onChannelInputKeydown(e: KeyboardEvent) {
         
-        // Toggle
-        active = !active
+        if(e.key !== 'Enter') return
+        if(this.channelInputValue === null) return
         
-        this.channels[channel] = active
+        const channelNum = this.channelInputValue as Channel
         
-        if(active) this.sequencer.activateChannel(channel)
-            else this.sequencer.deactivateChannel(channel)
+        // Validate channel number
+        if(channelNum < 0 || channelNum >= Synthesizer.maxChannelCount) {
+            console.warn(`Invalid channel number: ${channelNum}. Must be 0-${Synthesizer.maxChannelCount - 1}`)
+            return
+        }
+        
+        // Add the channel if not already present
+        if(this.sequencer.channels.indexOf(channelNum) === -1) {
+            this.sequencer.activateChannel(channelNum)
+            this.updateChannel()
+            this.saveUndo()
+        } else {
+            console.warn(`Channel ${channelNum} already active`)
+        }
+    }
+    
+    /**
+     * Toggle a channel on/off (single click)
+     */
+    toggleChannel(channelNum: Channel) {
+        
+        if(this.sequencer.channels.indexOf(channelNum) !== -1) {
+            // Channel is active, deactivate it
+            this.sequencer.deactivateChannel(channelNum)
+        } else {
+            // Channel is inactive, activate it
+            this.sequencer.activateChannel(channelNum)
+        }
         
         this.updateChannel()
-
+        this.saveUndo()
+    }
+    
+    /**
+     * Remove a channel (double click)
+     */
+    removeChannel(channelNum: Channel) {
+        
+        this.sequencer.deactivateChannel(channelNum)
+        this.updateChannel()
         this.saveUndo()
     }
     

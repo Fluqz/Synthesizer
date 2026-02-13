@@ -217,6 +217,10 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         if(this.toneSequence) this.toneSequence.loopEnd = this.bars
     }
 
+    /**
+     * Start this sequencer independently.
+     * Playback will begin at the next bar boundary (4/4 beat) for timing accuracy.
+     */
     start() {
 
         BeatMachine.start()
@@ -232,8 +236,57 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         this.startSequence(this.sequence)
     }
 
+    /**
+     * Start this sequencer at a specific Tone.js beat time.
+     * Used for synchronized multi-sequencer playback where all sequencers start together.
+     * @param beatTime - The Tone.js transport time when playback should begin
+     */
+    startAtTime(beatTime: number) {
+
+        if(this.toneSequence) {
+
+            this.toneSequence.cancel(Tone.getContext().currentTime)
+            this.toneSequence.stop(Tone.getContext().currentTime)
+            this.toneSequence.clear()
+            this.toneSequence.dispose()
+        }
+
+        this.toneSequence = this.createToneSequence()
+
+        this.toneSequence.start(beatTime, 0)
+
+        if(Sequencer.startTime == undefined) Sequencer.startTime = beatTime
+        
+        this.startTime = beatTime
+
+        this.isPlaying = true
+
+        console.log('Sequencer', this.id, 'started at beat time:', beatTime)
+    }
 
     private lastNote: Tone.Unit.Frequency
+    
+    /** Create and configure the Tone.Part for this sequence */
+    private createToneSequence(): Tone.Part {
+
+        const toneSequence = new Tone.Part((time, value) => {
+
+            for(let channel of this.channels) {
+
+                this.synthesizer.triggerAttackRelease(Tone.Frequency(value.note).toNote(), value.length, time, channel, value.velocity)
+            }
+            
+        }, this.sequence)
+
+        toneSequence.loop = this.loop
+        toneSequence.loopEnd = this.bars
+        toneSequence.humanize = this.humanize
+        toneSequence.probability = 1
+
+        return toneSequence
+    }
+
+    /** Internal: Start sequence using BeatMachine for bar-aligned playback */
     private startSequence(sequence: SequenceObject[]) {
 
         if(this.toneSequence) {
@@ -244,48 +297,18 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
             this.toneSequence.dispose()
         }
 
-        const now = Tone.getContext().currentTime
+        this.toneSequence = this.createToneSequence()
 
-        this.toneSequence = new Tone.Part((time, value) => {
+        // Schedule to start on next bar boundary for timing accuracy
+        BeatMachine.scheduleNextBeat(beatTime => {
 
-            // console.log('t', time.toFixed(5), Tone.getContext().currentTime.toFixed(5), this.toneSequence.progress.toFixed(5), this.toneSequence.toSeconds().toFixed(5))
+            console.log('Sequencer', this.id, 'starting at bar boundary, beat time:', beatTime)
 
-            // console.log('time', this.id, time, Sequencer.startTime)
+            this.toneSequence.start(beatTime, 0)
 
-            for(let channel of this.channels) {
-
-                this.synthesizer.triggerAttackRelease(Tone.Frequency(value.note).toNote(), value.length, time, channel, value.velocity)
-
-                // console.log('SEQUENCER at Channel', channel, Tone.Frequency(value.note).toNote(), time, value, sequence)
-            }
+            if(Sequencer.startTime == undefined) Sequencer.startTime = beatTime
             
-        }, sequence)
-
-
-        // Tone.getTransport().scheduleRepeat((time) => {
-
-        //     console.log('progress', 
-            
-        //     ((Tone.getContext().currentTime - Tone.Time(Sequencer.startTime).toSeconds()) % Tone.Time('1m').toSeconds()).toFixed(2))
-            
-        // }, .01)
-
-        this.toneSequence.loop = this.loop
-
-        this.toneSequence.loopEnd = this.bars
-
-        this.toneSequence.humanize = this.humanize
-        this.toneSequence.probability = 1
-
-        BeatMachine.scheduleNextBeat(t => {
-
-            console.log('FN scheduleNextBeat', t)
-
-            this.toneSequence.start(t, 0)
-
-            if(Sequencer.startTime == undefined) Sequencer.startTime = t
-            
-            this.startTime = t
+            this.startTime = beatTime
 
             this.isPlaying = true
 

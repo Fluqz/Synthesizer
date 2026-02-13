@@ -4,6 +4,7 @@ import { Track } from '../synthesizer/track'
 import { Sequencer as _Sequencer, Sequencer } from '../synthesizer/sequencer'
 import { Node as _Node } from '../synthesizer/nodes/'
 import { Synthesizer, type Channel, type ComponentType } from '../synthesizer/synthesizer'
+import { BeatMachine } from '../synthesizer/beat-machine'
 import { G } from '../globals';
 import { Storage } from '../core/storage';
 import { AfterContentInit, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, Input } from '@angular/core'
@@ -363,20 +364,25 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     startAllSequencers() {
 
-        // BeatMachine.stop()
-        
-        _Sequencer.startTime = Tone.getContext().currentTime
-        console.log('Transport pos',Tone.getTransport().position)
-        console.log('Transport prog',Tone.getTransport().progress)
+        if(this.synthesizer.sequencers.length === 0) return
 
-        // Tone.getTransport().position = '0:0:0'
-        // Tone.getTransport().loop = true
+        // Start all sequencers synchronized at the next beat for sample-accurate timing
+        BeatMachine.start()
 
-        for(let seq of this.synthesizer.sequencers) seq.start()
+        _Sequencer.startTime = undefined
 
-        this.synthesizer = this.synthesizer
-        this.synthesizer.sequencers = this.synthesizer.sequencers
-        this.synthesizer.components = this.synthesizer.components
+        BeatMachine.scheduleNextBeat((beatTime) => {
+
+            console.log('Starting all sequencers at beat time:', beatTime)
+
+            for(let seq of this.synthesizer.sequencers) {
+                seq.startAtTime(beatTime)
+            }
+
+            this.synthesizer = this.synthesizer
+            this.synthesizer.sequencers = this.synthesizer.sequencers
+            this.synthesizer.components = this.synthesizer.components
+        })
     }
 
     stopAllSequencers() {
@@ -575,14 +581,28 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         this.saveUndo()
     }
 
+    /**
+     * Toggle playback - starts/stops all sequencers and the transport
+     */
     togglePlayStop() {
 
         if(!G.isPlaying) {
+            // Start transport and all active sequencers
             G.start()
-            console.log('START', Tone.getTransport().now())
+            
+            // If there are sequencers, start them all synchronized
+            if(this.synthesizer.sequencers.length > 0) {
+                this.startAllSequencers()
+            }
+            
+            console.log('START Transport', Tone.getTransport().now())
         }
         else {
+            // Stop all sequencers and transport
+            this.stopAllSequencers()
             Tone.getTransport().stop()
+            
+            console.log('STOP Transport')
         }
 
         G.isPlaying = !G.isPlaying
