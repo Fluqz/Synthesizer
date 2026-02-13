@@ -64,7 +64,7 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewC
         font-size: 0.7rem;
         margin: 0px 10px 0px 10px;
 
-        min-width: 100px;
+        // min-width: 100px;
         height: 25px;
 
         cursor: pointer;

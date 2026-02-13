@@ -160,10 +160,6 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
         G.w = window.innerWidth
         G.h = window.innerHeight
 
-        // Visual.moire()
-        Visual.flowField()
-        // Visual.noise()
-
         // Set initial volume
         this.synthesizer.setVolume(-3)
 
@@ -185,6 +181,10 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
 
          // Save Undo
          Storage.saveUndo(storageData)
+
+         // Initialize visuals
+         Visual.flowField()
+         Visual.activeVisual?.restart()
 
          // Change Background Colors
         let colors = JSON.parse(JSON.stringify(COLORS))

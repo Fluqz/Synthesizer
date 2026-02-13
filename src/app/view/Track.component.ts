@@ -158,12 +158,13 @@ import { CommonModule } from "@angular/common";
         overflow-y: hidden;
         scrollbar-width: none;
 
-        border: .5px solid var(--c-b);
+        // border: .5px solid var(--c-b);
     }
 
     .track-wrapper .track-options {
 
         min-width: 250px;
+        height: inherit;
 
         display: inline-flex;
         align-items: center;

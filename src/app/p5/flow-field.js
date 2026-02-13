@@ -8,8 +8,8 @@ import * as Tone from "tone";
 
 export const flowFieldOptions = {
   /** Modulation factor */
-  modulator: 2,
-  modulatorColor: {},
+  modulator: 5,
+  modulatorColor: { r: 200, g: 150, b: 100 },
 };
 
 /** Try to implement this with shaders */
@@ -38,6 +38,8 @@ export const flowField = (p5) => {
     p5.pixelDensity(1);
     p5.background(0);
     p5.frameRate(10);
+    p5.stroke(255);
+    p5.strokeWeight(1);
 
     p5.canvas.style.position = "absolute";
     p5.canvas.style.top = "0px";

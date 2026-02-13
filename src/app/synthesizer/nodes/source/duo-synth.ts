@@ -12,7 +12,7 @@ export class DuoSynth extends Instrument {
     /** Gain node */ 
     public gain: Tone.Gain
 
-    public _volume: number = .5
+    public _volume: number = -5
 
 
     /** freq, detune, volume, waveform,  */
@@ -23,7 +23,7 @@ export class DuoSynth extends Instrument {
         this.polySynth = new Tone.PolySynth(Tone.DuoSynth)
         this.output = this.polySynth
 
-        this.volume = 0
+        this.volume = -5
 
         this.input = null
 
