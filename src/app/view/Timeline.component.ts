@@ -60,7 +60,7 @@ export interface DragState {
 
                 <div class="timeline-ui">
 
-                    <div *ngIf="sequencer.isPlaying == true" class="current-line" [style.left.px]="currentLinePos"></div>
+                    <div *ngIf="sequencer.isPlaying == true" class="current-line" [style.transform]="'translateX(' + currentLinePos + 'px)'"></div>
 
                     @for(_ of barArray; track _; let bar = $index) {
 
@@ -351,8 +351,7 @@ export interface DragState {
                     if(this.sequencer.isPlaying) {
 
                         this.currentLinePos = ((((Tone.immediate() - startTime) % this.bars)) * (this.timelineRect.width / this.bars))
-
-                        this.cdr.detectChanges()
+                        this.cdr.markForCheck()
                     }
                         
                     else this.currentLinePos = 0

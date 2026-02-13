@@ -377,16 +377,16 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             // Node's Direct Bypass
             for(let n of this.nodes) {
 
-                if(n.directBypass === true) {
+                // if(n.directBypass === true) {
 
-                    for(let ci of Array.from(n.connectedInputs)) {
+                //     for(let ci of Array.from(n.connectedInputs)) {
 
-                        for(let co of Array.from(n.connectedOutputs)) {
+                //         for(let co of Array.from(n.connectedOutputs)) {
 
-                            ci.connect(co)
-                        }
-                    }
-                }
+                //             ci.connect(co)
+                //         }
+                //     }
+                // }
             }
         }
         else {

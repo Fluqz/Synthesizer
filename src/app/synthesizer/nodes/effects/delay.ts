@@ -25,9 +25,9 @@ export class Delay extends Effect {
         this.input = this.feedbackDelay
         this.output = this.feedbackDelay
 
-        this.directBypass = true
+        // this.directBypass = false
 
-        this.wet = this.feedbackDelay.get().wet
+        this._wet = wet ? wet : 0.5
         this.delayTime = delayTime ? delayTime : 1.12
         this.feedback = feedback ? feedback : .8
         

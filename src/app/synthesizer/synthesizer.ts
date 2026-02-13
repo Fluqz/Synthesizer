@@ -91,14 +91,14 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     static nodes = {
         effects: {
 
-            Delay: () => { return new Delay(1, .12, .8) },
-            Tremolo: () => { return new Tremolo(1, 5, 1) },
-            Distortion: () => { return new Distortion(1, .5) },
-            Chorus: () => { return new Chorus(1, 4, 20, 1, 1) },
-            AutoFilter: () => { return new AutoFilter(1) },
-            Reverb: () => { return new Reverb(1) },
-            Phaser: () => { return new Phaser(1) },
-            Vibrato: () => { return new Vibrato(1) },
+            Delay: () => { return new Delay(.5, .12, .8) },
+            Tremolo: () => { return new Tremolo(.5, 5, 1) },
+            Distortion: () => { return new Distortion(.5, .5) },
+            Chorus: () => { return new Chorus(.5, 4, 20, 1, 1) },
+            AutoFilter: () => { return new AutoFilter(.5) },
+            Reverb: () => { return new Reverb(.5) },
+            Phaser: () => { return new Phaser(.5) },
+            Vibrato: () => { return new Vibrato(.5) },
         },
         sources: {
 	

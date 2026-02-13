@@ -87,7 +87,7 @@ export abstract class Node/* extends Tone.ToneAudioNode*/ implements ISerialize<
     connectedOutputs: Set<Tone.ToneAudioNode> = new Set()
 
     /** If true, this nodes connectedInput's will be connected too the connectedOutput's. */
-    directBypass: boolean = false
+    // directBypass: boolean = false
 
     /** OnDelete Observable */
     onDelete: Subject<Node>
