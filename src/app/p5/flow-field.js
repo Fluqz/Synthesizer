@@ -37,7 +37,7 @@ export const flowField = (p5) => {
     p5.createCanvas(G.w, G.h);
     p5.pixelDensity(1);
     p5.background(0);
-    p5.frameRate(10);
+    p5.frameRate(15);
     p5.stroke(255);
     p5.strokeWeight(1);
 
