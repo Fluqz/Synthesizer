@@ -39,11 +39,11 @@ export class Chorus extends Effect {
         this._wave = 'sine'
         this._wavePartial = ''
 
-        this.props.set('delayTime', { type: ParamType.KNOB, name: 'Delay Time', get: () =>  this.delayTime, set: (e) => this.delayTime = e, min: 2, max: 20, groupID: 0 })
-        this.props.set('depth', { type: ParamType.KNOB, name: 'Depth', get: () =>  this.depth, set: (e) => this.depth = e, min: 0, max: 1, groupID: 0 })
-        this.props.set('feedback', { type: ParamType.KNOB, name: 'Feedback', get: () =>  this.feedback, set: (e) => this.feedback = e, min: 0, max: 1, groupID: 0 })
-        this.props.set('frequency', { type: ParamType.KNOB, name: 'frequency', get: () =>  this.frequency, set: (e) => this.frequency = e, min: .1, max: 1000, groupID: 0 })
-        this.props.set('spread', { type: ParamType.KNOB, name: 'spread', get: () =>  this.spread, set: (e) => this.spread = e, min: 0, max: 180, groupID: 0 })
+        this.props.set('delayTime', { type: ParamType.KNOB, name: 'Delay Time', get: () =>  this.delayTime, set: (e) => this.delayTime = e, min: 2, max: 20, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('depth', { type: ParamType.KNOB, name: 'Depth', get: () =>  this.depth, set: (e) => this.depth = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('feedback', { type: ParamType.KNOB, name: 'Feedback', get: () =>  this.feedback, set: (e) => this.feedback = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('frequency', { type: ParamType.KNOB, name: 'frequency', get: () =>  this.frequency, set: (e) => this.frequency = e, min: .1, max: 1000, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('spread', { type: ParamType.KNOB, name: 'spread', get: () =>  this.spread, set: (e) => this.spread = e, min: 0, max: 180, step: 0.01, precision: 2, groupID: 0 })
 
         this.props.set('wave', { type: ParamType.DROPDOWN, name: 'Wave', get: () => this.wave, set: (v:string) => this.wave = v, options: [ 'sine', 'square', 'sawtooth', 'triangle', 'pulse', ], groupID: 1 })
         this.props.set('wavePartial', { type: ParamType.DROPDOWN, name: 'Wave Partial', get: () => this.wavePartial, set: (v:string) => this.wavePartial = v, options: ['', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32], groupID: 1 })

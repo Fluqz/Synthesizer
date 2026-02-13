@@ -32,6 +32,12 @@ export interface KnobNodeParameter extends NodeParameter {
     min: number
     /** Max value */
     max: number
+    /** Step size for increments (e.g., 0.01) */
+    step?: number
+    /** Number of decimal places to display */
+    precision?: number
+    /** Scale type: 'linear' or 'logarithmic' */
+    scaleType?: 'linear' | 'logarithmic'
 }
 
 export interface DropDownNodeParameter extends NodeParameter {

@@ -76,19 +76,19 @@ export class MembraneSynth extends Instrument {
         this.sustain = options.sustain != undefined ? options.sustain : data.envelope.sustain
         this.release = options.release != undefined ? options.release : data.envelope.release
 
-        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () => this.volume, set: (v) => this.volume = v, min: -70, max: 6, groupID: 0 })
-        this.props.set('detune', { type: ParamType.KNOB, name: 'Detune', get: () => { return this.detune }, set: (v) => this.detune = v, min: -100, max: 100, groupID: 0 })
-        this.props.set('portamento', { type: ParamType.KNOB, name: 'Portamento', get: () => this.portamento, set: (v) => this.portamento = v, min: 0, max: 100, groupID: 0 })
-        this.props.set('octaves', { type: ParamType.KNOB, name: 'octaves', get: () => this.octaves, set: (v) => this.octaves = v,min: 0, max: 20, groupID: 0 })
-        this.props.set('pitchDecay', { type: ParamType.KNOB, name: 'pitchDecay', get: () => this.pitchDecay, set: (v) => this.pitchDecay = v, min: 0, max: 1, groupID: 0 })
+        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () => this.volume, set: (v) => this.volume = v, min: -70, max: 6, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('detune', { type: ParamType.KNOB, name: 'Detune', get: () => { return this.detune }, set: (v) => this.detune = v, min: -100, max: 100, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('portamento', { type: ParamType.KNOB, name: 'Portamento', get: () => this.portamento, set: (v) => this.portamento = v, min: 0, max: 100, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('octaves', { type: ParamType.KNOB, name: 'octaves', get: () => this.octaves, set: (v) => this.octaves = v,min: 0, max: 20, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('pitchDecay', { type: ParamType.KNOB, name: 'pitchDecay', get: () => this.pitchDecay, set: (v) => this.pitchDecay = v, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
 
         this.props.set('wave', { type: ParamType.DROPDOWN, name: 'Wave', get: () => this.wave, set: (v:string) => this.wave = v, options: [ 'sine', 'square', 'sawtooth', 'triangle', 'pulse', ], groupID: 1 })
         this.props.set('phase', { type: ParamType.KNOB, name: 'Phase', get: () => this.phase, set: (v:number) => this.phase = v, min:0, max: 100, groupID: 1 })
         
-        this.props.set('attack', { type: ParamType.KNOB, name: 'Attack', get: () => this.attack, set: (v:number) => this.attack = v, min: 0, max: 5, groupID: 2 })
-        this.props.set('decay', { type: ParamType.KNOB, name: 'Decay', get: () => this.decay, set: (v:number) => this.decay = v, min: 0, max: 5, groupID: 2 })
-        this.props.set('sustain', { type: ParamType.KNOB, name: 'Sustain', get: () => this.sustain, set: (v:number) => this.sustain = v, min: 0, max: 1, groupID: 2 })
-        this.props.set('release', { type: ParamType.KNOB, name: 'Release', get: () => this.release, set: (v:number) => this.release = v, min: 0, max: 5, groupID: 2 })
+        this.props.set('attack', { type: ParamType.KNOB, name: 'Attack', get: () => this.attack, set: (v:number) => this.attack = v, min: 0, max: 5, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('decay', { type: ParamType.KNOB, name: 'Decay', get: () => this.decay, set: (v:number) => this.decay = v, min: 0, max: 5, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('sustain', { type: ParamType.KNOB, name: 'Sustain', get: () => this.sustain, set: (v:number) => this.sustain = v, min: 0, max: 1, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('release', { type: ParamType.KNOB, name: 'Release', get: () => this.release, set: (v:number) => this.release = v, min: 0, max: 5, step: 0.01, precision: 2, groupID: 2 })
     }
 
     set volume(v: number) {

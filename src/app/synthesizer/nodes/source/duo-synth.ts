@@ -47,23 +47,23 @@ export class DuoSynth extends Instrument {
 
 
 
-        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () => { return this.volume }, set: (v: number) => { this.volume = v }, min: -70, max: 6, groupID: 0 })
+        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () => { return this.volume }, set: (v: number) => { this.volume = v }, min: -70, max: 6, step: 0.01, precision: 2, groupID: 0 })
         
-        this.props.set('detune', { type: ParamType.KNOB, name: 'Detune', get: () => { return this.detune }, set: (v: number) => { this.detune = v }, min: -100, max: 100, groupID: 1 })
-        this.props.set('harmonicity', { type: ParamType.KNOB, name: 'Harmonicity', get: () => { return this.harmonicity }, set: (v: number) => { this.harmonicity = v }, min: 0, max: 5, groupID: 1 })
-        this.props.set('portamento', { type: ParamType.KNOB, name: 'Portamento', get: () => { return this.portamento }, set: (v: number) => { this.portamento = v }, min: 0, max: 1, groupID: 1 })
-        this.props.set('vibratoAmount', { type: ParamType.KNOB, name: 'Vibrato Amount', get: () => { return this.vibratoAmount }, set: (v: number) => { this.vibratoAmount = v }, min: 0, max: 1, groupID: 1 })
-        this.props.set('vibratoRate', { type: ParamType.KNOB, name: 'Vibrato Rate', get: () => { return this.vibratoRate }, set: (v: number) => { this.vibratoRate = v }, min: 0, max: 60, groupID: 1 })
+        this.props.set('detune', { type: ParamType.KNOB, name: 'Detune', get: () => { return this.detune }, set: (v: number) => { this.detune = v }, min: -100, max: 100, step: 0.01, precision: 2, groupID: 1 })
+        this.props.set('harmonicity', { type: ParamType.KNOB, name: 'Harmonicity', get: () => { return this.harmonicity }, set: (v: number) => { this.harmonicity = v }, min: 0, max: 5, step: 0.01, precision: 2, groupID: 1 })
+        this.props.set('portamento', { type: ParamType.KNOB, name: 'Portamento', get: () => { return this.portamento }, set: (v: number) => { this.portamento = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 1 })
+        this.props.set('vibratoAmount', { type: ParamType.KNOB, name: 'Vibrato Amount', get: () => { return this.vibratoAmount }, set: (v: number) => { this.vibratoAmount = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 1 })
+        this.props.set('vibratoRate', { type: ParamType.KNOB, name: 'Vibrato Rate', get: () => { return this.vibratoRate }, set: (v: number) => { this.vibratoRate = v }, min: 0, max: 60, step: 0.01, precision: 2, groupID: 1 })
 
-        this.props.set('attack0', { type: ParamType.KNOB, name: 'Attack 1', get: () => { return this.attack0 }, set: (v: number) => { this.attack0 = v }, min: 0, max: 3, groupID: 2 })
-        this.props.set('decay0', { type: ParamType.KNOB, name: 'Decay 1', get: () => { return this.decay0 }, set: (v: number) => { this.decay0 = v }, min: 0, max: 1, groupID: 2 })
-        this.props.set('release0', { type: ParamType.KNOB, name: 'Release 1', get: () => { return this.release0 }, set: (v: number) => { this.release0 = v }, min: 0, max: 5, groupID: 2 })
-        this.props.set('sustain0', { type: ParamType.KNOB, name: 'Sustain 1', get: () => { return this.sustain0 }, set: (v: number) => { this.sustain0 = v }, min: 0, max: 1, groupID: 2 })
+        this.props.set('attack0', { type: ParamType.KNOB, name: 'Attack 1', get: () => { return this.attack0 }, set: (v: number) => { this.attack0 = v }, min: 0, max: 3, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('decay0', { type: ParamType.KNOB, name: 'Decay 1', get: () => { return this.decay0 }, set: (v: number) => { this.decay0 = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('release0', { type: ParamType.KNOB, name: 'Release 1', get: () => { return this.release0 }, set: (v: number) => { this.release0 = v }, min: 0, max: 5, step: 0.01, precision: 2, groupID: 2 })
+        this.props.set('sustain0', { type: ParamType.KNOB, name: 'Sustain 1', get: () => { return this.sustain0 }, set: (v: number) => { this.sustain0 = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 2 })
 
-        this.props.set('attack1', { type: ParamType.KNOB, name: 'Attack 2', get: () => { return this.attack1 }, set: (v: number) => { this.attack1 = v }, min: 0, max: 3, groupID: 3 })
-        this.props.set('decay1', { type: ParamType.KNOB, name: 'Decay 2', get: () => { return this.decay1 }, set: (v: number) => { this.decay1 = v }, min: 0, max: 1, groupID: 3 })
-        this.props.set('release1', { type: ParamType.KNOB, name: 'Release 2', get: () => { return this.release1 }, set: (v: number) => { this.release1 = v }, min: 0, max: 5, groupID: 3 })
-        this.props.set('sustain1', { type: ParamType.KNOB, name: 'Sustain 2', get: () => { return this.sustain1 }, set: (v: number) => { this.sustain1 = v }, min: 0, max: 1, groupID: 3 })
+        this.props.set('attack1', { type: ParamType.KNOB, name: 'Attack 2', get: () => { return this.attack1 }, set: (v: number) => { this.attack1 = v }, min: 0, max: 3, step: 0.01, precision: 2, groupID: 3 })
+        this.props.set('decay1', { type: ParamType.KNOB, name: 'Decay 2', get: () => { return this.decay1 }, set: (v: number) => { this.decay1 = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 3 })
+        this.props.set('release1', { type: ParamType.KNOB, name: 'Release 2', get: () => { return this.release1 }, set: (v: number) => { this.release1 = v }, min: 0, max: 5, step: 0.01, precision: 2, groupID: 3 })
+        this.props.set('sustain1', { type: ParamType.KNOB, name: 'Sustain 2', get: () => { return this.sustain1 }, set: (v: number) => { this.sustain1 = v }, min: 0, max: 1, step: 0.01, precision: 2, groupID: 3 })
     }
 
     get volume() { return this._volume }

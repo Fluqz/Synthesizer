@@ -11,6 +11,7 @@ import { getChannelColor } from "../core/colors";
 import { AfterViewInit, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
 import { DropdownComponent } from "./Dropdown.component";
 import { KnobComponent } from "./Knob.component";
+import { OscilloscopeComponent } from "./Oscilloscope.component";
 import { LevelMeterComponent } from './LevelMeter.component'
 import { NodeComponent } from "./Node.component";
 import { CommonModule } from "@angular/common";
@@ -20,7 +21,7 @@ import { CommonModule } from "@angular/common";
 
     selector: 'sy-track',
     standalone: true,
-    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent ],
+    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent, OscilloscopeComponent ],
     template: `
 
     <div class="track-wrapper" (click)="onClick($event)">
@@ -45,12 +46,15 @@ import { CommonModule } from "@angular/common";
                 [value]="track.volume"
                 [min]="-70"
                 [max]="6"
+                [step]="0.1"
+                [precision]="1"
+                [scaleType]="'logarithmic'"
                 (onChange)="onVolumeChange($event)" />
 
 
-            <!-- <LevelMeter output={track.volumeNode} /> -->
+            <!-- <LevelMeter [output]="track.volumeNode" /> -->
 
-            <!-- <Oscilloscope output={track.volumeNode} /> -->
+            <sy-oscilloscope [output]="track.volumeNode"></sy-oscilloscope>
 
 
             <div class="track-btns">

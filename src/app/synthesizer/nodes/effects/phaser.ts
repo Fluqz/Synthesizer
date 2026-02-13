@@ -30,12 +30,12 @@ export class Phaser extends Effect {
         this.baseFrequency = this.phaser.get().baseFrequency
         this.frequency = this.phaser.get().frequency
 
-        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (e) => this.wet = e, min: 0, max: 1, groupID: 0 })
-        this.props.set('Q', { type: ParamType.KNOB, name: 'Q', get: () =>  this.Q, set: (e) => this.Q = e, min: 0, max: 1, groupID: 0 })
-        this.props.set('octaves', { type: ParamType.KNOB, name: 'Octaves', get: () =>  this.octaves, set: (e) => this.octaves = e, min: 0, max: 12, groupID: 0 })
-        // this.props.set('stages', { type: ParamType.KNOB, name: 'Stages', get: () =>  this.stages, set: (e) => this.stages = e, min: 0, max: 1, groupID: 0 })
-        this.props.set('baseFrequency', { type: ParamType.KNOB, name: 'Base Frequency', get: () =>  this.baseFrequency, set: (e) => this.baseFrequency = e, min: .1, max: 1000, groupID: 0 })
-        this.props.set('frequency', { type: ParamType.KNOB, name: 'Frequency', get: () =>  this.frequency, set: (e) => this.frequency = e, min: .1, max: 1000, groupID: 0 })
+        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (e) => this.wet = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('Q', { type: ParamType.KNOB, name: 'Q', get: () =>  this.Q, set: (e) => this.Q = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('octaves', { type: ParamType.KNOB, name: 'Octaves', get: () =>  this.octaves, set: (e) => this.octaves = e, min: 0, max: 12, step: 0.01, precision: 2, groupID: 0 })
+        // this.props.set('stages', { type: ParamType.KNOB, name: 'Stages', get: () =>  this.stages, set: (e) => this.stages = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('baseFrequency', { type: ParamType.KNOB, name: 'Base Frequency', get: () =>  this.baseFrequency, set: (e) => this.baseFrequency = e, min: .1, max: 1000, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('frequency', { type: ParamType.KNOB, name: 'Frequency', get: () =>  this.frequency, set: (e) => this.frequency = e, min: .1, max: 1000, step: 0.01, precision: 2, groupID: 0 })
     }
 
     get wet() { return this._wet }

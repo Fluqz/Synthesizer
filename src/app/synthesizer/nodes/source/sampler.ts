@@ -70,10 +70,10 @@ export class Sampler extends Instrument {
         this.attack = this.sampler.get().attack
         this.release = this.sampler.get().release
 
-        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () =>  this.volume, set: (v) => this.volume = v, min: -70, max: 6, groupID: 0 })
-        this.props.set('attack', { type: ParamType.KNOB, name: 'Attack', get: () =>  this.attack, set: (v) => this.attack = v, min: 0, max: 1, groupID: 0 })
-        this.props.set('release', { type: ParamType.KNOB, name: 'Release', get: () =>  this.release, set: (v) => this.release = v, min: 0, max: 5, groupID: 0 })
-        this.props.set('sample', { type: ParamType.DROPDOWN, name: 'Sample', get: () =>  this.sample, set: (v) => this.sample = v, fileUploadHandler: this.fileUploadHandler.bind(this), options: opts, fileUpload: true, min: 0, max: 1, groupID: 0 })
+        this.props.set('volume', { type: ParamType.KNOB, name: 'Volume', get: () =>  this.volume, set: (v) => this.volume = v, min: -70, max: 6, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('attack', { type: ParamType.KNOB, name: 'Attack', get: () =>  this.attack, set: (v) => this.attack = v, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('release', { type: ParamType.KNOB, name: 'Release', get: () =>  this.release, set: (v) => this.release = v, min: 0, max: 5, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('sample', { type: ParamType.DROPDOWN, name: 'Sample', get: () =>  this.sample, set: (v) => this.sample = v, fileUploadHandler: this.fileUploadHandler.bind(this), options: opts, fileUpload: true, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
     }
 
     set volume(v: number) {

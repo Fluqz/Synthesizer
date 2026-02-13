@@ -166,6 +166,8 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     /** PresetManager instance */
     presetManager: PresetManager
 
+    private default_volume = -3
+
     // Events
     onKeyDownEvent
     onKeyUpEvent
@@ -186,7 +188,7 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
         this.octave = 2
         
         // Synthesizer Master Volume
-        this.volume = new Tone.Volume(-3)
+        this.volume = new Tone.Volume(this.default_volume)
         this.volume.toDestination()
 
         this.isRecording = false
@@ -235,7 +237,7 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
         this.onAddNode = new RxJs.Subject()
         this.onRemoveNode = new RxJs.Subject()
 
-        this.setVolume(-3)
+        this.setVolume(this.default_volume)
     }
 
     get bpm() { return Tone.getTransport().bpm.value }
@@ -609,7 +611,7 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     /** Resets the synthesizer to standard settings */
     reset() {
 
-        this.setVolume(.5)
+        this.setVolume(this.default_volume)
         this.setOctave(2)
         this.channel = 0
 

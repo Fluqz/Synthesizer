@@ -62,6 +62,9 @@ import { CommonModule } from '@angular/common';
                                             [min]="n.min"
                                             [max]="n.max"
                                             [value]="n.get()"
+                                            [step]="n.step ?? 0.01"
+                                            [precision]="n.precision ?? 2"
+                                            [scaleType]="n.scaleType ?? 'linear'"
                                             (onChange)="onChange($event, n)"></sy-knob>
 
                                     </div>

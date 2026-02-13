@@ -64,7 +64,7 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewC
         font-size: 0.7rem;
         margin: 0px 10px 0px 10px;
 
-        min-width: 50px;
+        min-width: 100px;
         height: 25px;
 
         cursor: pointer;
@@ -78,10 +78,10 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewC
 
     .dropdown-select {
 
-        width: auto;
+        // width: 100%;
         height: inherit;
 
-        /* padding: 0px 5px; */
+        padding: 0px 5px;
 
         -webkit-appearance:none;
         -moz-appearance: none;
@@ -96,6 +96,9 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewC
         color: --c-w;
 
         text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         font-size: inherit;
     }

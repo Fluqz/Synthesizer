@@ -31,9 +31,9 @@ export class Delay extends Effect {
         this.delayTime = delayTime ? delayTime : 1.12
         this.feedback = feedback ? feedback : .8
         
-        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (w) => { this.wet = w}, min: 0, max: 1, groupID: 0 })
-        this.props.set('delayTime', { type: ParamType.KNOB, name: 'Delay Time', get: () =>  this.delayTime, set: (d) => { this.delayTime = d}, min: 0, max: 1, groupID: 0 })
-        this.props.set('feedback', { type: ParamType.KNOB, name: 'Feedback', get: () =>  this.feedback, set: (f) => { this.feedback = f}, min: 0, max: 1, groupID: 0 })
+        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (w) => { this.wet = w}, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('delayTime', { type: ParamType.KNOB, name: 'Delay Time', get: () =>  this.delayTime, set: (d) => { this.delayTime = d}, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('feedback', { type: ParamType.KNOB, name: 'Feedback', get: () =>  this.feedback, set: (f) => { this.feedback = f}, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
     }
 
     get wet() { return this._wet }

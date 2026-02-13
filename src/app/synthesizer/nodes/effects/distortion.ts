@@ -22,8 +22,8 @@ export class Distortion extends Effect {
         this.wet = wet != undefined ? wet : this.distortion.get().wet
         this.gain = gain != undefined ? gain : this.distortion.get().distortion
 
-        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (v) => this.wet = v, min: 0, max: 1, groupID: 0 })
-        this.props.set('gain', { type: ParamType.KNOB, name: 'Gain', get: () =>  this.gain, set: (v) => this.gain = v, min: 0, max: 1, groupID: 0 })
+        this.props.set('wet', { type: ParamType.KNOB, name: 'Wet', get: () =>  this.wet, set: (v) => this.wet = v, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        this.props.set('gain', { type: ParamType.KNOB, name: 'Gain', get: () =>  this.gain, set: (v) => this.gain = v, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
     }
 
     get wet() { return this._wet }

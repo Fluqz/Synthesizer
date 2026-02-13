@@ -1,11 +1,7 @@
-
-
-
-
 import { fromEvent, Observable, Subscription } from "rxjs";
 import { M } from "../util/math"
 import { Vec2 } from "../util/math";
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnInit, OnChanges, AfterViewInit, OnDestroy, SimpleChanges } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
 
@@ -23,11 +19,11 @@ import { CommonModule } from "@angular/common";
         <!-- <div class="knob-value">{ value.toFixed(2) }</div> -->
         <div class="knob-value">
             <input type="number"
-                    [value]="value ?? ''"
-                    [step]="steps"
+                    [value]="value?.toFixed(precision) ?? ''"
+                    [step]="step"
                     (click)="$event.target.select()" 
-                    (keydown)="$event.key == 'Enter' ? onInputChannge($event) : null"
-                    (change)="onInputChannge($event)" />
+                    (keydown)="$event.key == 'Enter' ? onInputChange($event) : null"
+                    (change)="onInputChange($event)" />
         </div>
 
         <div class="knob shifting-GIF" 
@@ -202,21 +198,31 @@ import { CommonModule } from "@angular/common";
     
     `,
 }) 
-export class KnobComponent {
+export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
 
 
     /** Name of Knob */
     @Input('name') name: string
+
     /** Current value */
     @Input('value') value: number = 0
+
     /** Minimum possible value */
     @Input('min') min: number = 0
+
     /** Maximum possible value */
     @Input('max') max: number = 1
 
-    public steps: number = 100
+    /** Step size for value increments (e.g., 1) */
+    @Input('step') step: number = 1
 
-    @Output('onChange') onChange: EventEmitter<number> = new EventEmitter()
+    /** Number of decimal places to display */
+    @Input('precision') precision: number = 0
+
+    /** Scale type: 'linear' or 'logarithmic' */
+    @Input('scaleType') scaleType: 'linear' | 'logarithmic' = 'linear'
+
+    @Output('onChange') onChange: EventEmitter<any> = new EventEmitter()
 
     /** Initial value */
     initValue: number
@@ -252,6 +258,8 @@ export class KnobComponent {
     dragInitValue: number
     /** Drag starting position */
     dragStartPosition: Vec2 = new Vec2()
+    /** Last shift state during drag */
+    lastDragShiftState: boolean = false
 
 
     /** Current angle when turning knob */
@@ -263,6 +271,8 @@ export class KnobComponent {
     isMouseDown: boolean = false
     /** Is key pressed down */
     isKeyDown: Boolean = false
+    /** Is Shift key pressed down */
+    isShiftDown: boolean = false
 
     /** Amount of pixels the cursor is allowed to travel between the mousedown and mouseup event. 
      * If value is exeeding clickRange, no click has occured.
@@ -270,6 +280,14 @@ export class KnobComponent {
     clickRange: number = 2
 
     showResetBtn: boolean = false
+
+    /** Pixels needed to drag for a full rotation (constant visual speed) */
+    pixelsPerFullRotation: number = 150
+
+    /** Accumulated scroll delta for sensitivity control */
+    private scrollAccumulator: number = 0
+    /** Scroll threshold before applying value change */
+    private scrollThreshold: number = 50
 
 
     wheelObservable: Observable<number>
@@ -289,9 +307,9 @@ export class KnobComponent {
         /** On 'touchstart' event callback */
         this.onTouchStart = this.onPointerDown.bind(this)
         /** On 'touchmove' event callback */
-        this.onTouchMove = this.onPointerMove
+        this.onTouchMove = this.onPointerMove.bind(this)
         /** On 'touchend' event callback */
-        this.onTouchEnd = this.onPointerUp
+        this.onTouchEnd = this.onPointerUp.bind(this)
 
 
         document.addEventListener('pointermove', this.onPointerMove.bind(this))
@@ -304,6 +322,34 @@ export class KnobComponent {
 
     }
 
+    ngOnInit() {
+        // Validate inputs
+        if (this.min >= this.max) {
+            console.warn('KnobComponent: min must be less than max')
+            this.max = this.min + 1
+        }
+
+        if (this.step <= 0) {
+            console.warn('KnobComponent: step must be positive')
+            this.step = 0.01
+        }
+
+        if (this.precision < 0) {
+            console.warn('KnobComponent: precision cannot be negative')
+            this.precision = 0
+        }
+
+        // Clamp initial value
+        this.value = this.clampValue(this.value)
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        // Recalculate angle whenever inputs change
+        if (changes['value'] || changes['min'] || changes['max']) {
+            this.updateAngle()
+        }
+    }
+
     toggleReset() {
 
         return this.showResetBtn = !this.showResetBtn
@@ -311,43 +357,108 @@ export class KnobComponent {
 
     reset = () => {
 
-        this.setValue(this.initValue)
+        this.setValueInternal(this.initValue, 'code')
     }
 
-    /** Set value between 0 - 1 */
-    setValue = (v: number) => {
+    /**
+     * Convert actual value to normalized value (0-1)
+     */
+    private toNormalized(value: number): number {
+        let normalized = (value - this.min) / (this.max - this.min)
 
-        console.log('val', v, Number.isNaN(v))
-        if(Number.isNaN(v)) return
-        
-        // this.value = v
+        if (this.scaleType === 'logarithmic') {
+            // For logarithmic scale, apply log transformation
+            // Map to log space
+            const logMin = Math.log(this.min <= 0 ? 0.001 : this.min)
+            const logMax = Math.log(this.max)
+            const logValue = Math.log(value <= 0 ? 0.001 : value)
+            normalized = (logValue - logMin) / (logMax - logMin)
+        }
 
-        // value = M.map(0, 1, min, max, value)
-
-        // console.log('Change', name, 'to :', value, initValue)
-
-        this.value = M.clamb(this.min, this.max, v)
-        
-        this.getAngle()
-
-        this.onChange.next(this.value)
+        return M.clamb(0, 1, normalized)
     }
 
-    getAngle = () => {
+    /**
+     * Convert normalized value (0-1) to actual value
+     */
+    private fromNormalized(normalized: number): number {
+        normalized = M.clamb(0, 1, normalized)
 
-        const oneDegree = ((this.max - this.min) / (Math.PI * 2))
-        
-        return this.angle = (this.value / oneDegree) - (this.min / oneDegree)
+        let value: number
+
+        if (this.scaleType === 'logarithmic') {
+            // For logarithmic scale, apply inverse log transformation
+            const logMin = Math.log(this.min <= 0 ? 0.001 : this.min)
+            const logMax = Math.log(this.max)
+            const logValue = logMin + (normalized * (logMax - logMin))
+            value = Math.exp(logValue)
+        } else {
+            // Linear scale
+            value = this.min + (normalized * (this.max - this.min))
+        }
+
+        return value
+    }
+
+    /**
+     * Snap value to nearest step
+     */
+    private snapToStep(value: number): number {
+        if (this.step <= 0) return value
+        return Math.round(value / this.step) * this.step
+    }
+
+    /**
+     * Clamp value to valid range [min, max]
+     */
+    private clampValue(value: number): number {
+        return Math.max(this.min, Math.min(this.max, value))
+    }
+
+    /**
+     * Unified method to set value from any source
+     */
+    setValueInternal = (v: number, source: 'drag' | 'input' | 'code' = 'code') => {
+
+        if (Number.isNaN(v)) return
+
+        // Clamp to range
+        let newValue = this.clampValue(v)
+
+        // Snap to step increments
+        newValue = this.snapToStep(newValue)
+
+        // Update value
+        this.value = newValue
+
+        // Update angle based on normalized value
+        this.updateAngle()
+
+        // Emit change event with detail property for compatibility with Node.component
+        this.onChange.next({ detail: this.value })
+    }
+
+    /**
+     * Calculate angle based on current value
+     * Always uses linear mapping for smooth, predictable visual rotation
+     * Logarithmic scale only affects the actual values, not the visual feedback
+     */
+    private updateAngle = () => {
+        // Linear normalization for smooth visual feedback (ignore scale type)
+        const linearNormalized = (this.value - this.min) / (this.max - this.min)
+        // Full 360 degree rotation: starts at 6 o'clock (90°), ends at 6 o'clock (450°)
+        // linear 0 (min) = 90deg (6 o'clock), linear 1 (max) = 450deg (full rotation back to 6 o'clock)
+        this.angle = (linearNormalized * Math.PI * 2) + (Math.PI * 0.5)
     }
 
 
     // EVENTS
 
-    onInputChannge = (e: InputEvent) => {
+    onInputChange = (e: InputEvent) => {
 
         const ele = e.target as HTMLInputElement
 
-        this.setValue(ele.valueAsNumber)
+        this.setValueInternal(ele.valueAsNumber, 'input')
 
         if(e instanceof KeyboardEvent && e.key == 'Enter') ele.blur()
     }
@@ -382,8 +493,6 @@ export class KnobComponent {
         // If mouse is not clicked while moving
         if(!this.isMouseDown) return
 
-        // console.log('mousemove', e)
-
         // Keep track of mouse position
         this.mousePosition.set(e.clientX, e.clientY)
 
@@ -398,6 +507,7 @@ export class KnobComponent {
 
                 this.dragStartPosition.copy(this.mousePosition)
                 this.dragInitValue = this.value
+                this.lastDragShiftState = this.isShiftDown
             }
 
             this.drag = true
@@ -406,12 +516,21 @@ export class KnobComponent {
         // Dragging 
         if(!this.drag) return
 
-        const distance = this.dragStartPosition.y - this.mousePosition.y
+        // Calculate pixels moved vertically (negative = up, positive = down)
+        const pixelsMoved = this.dragStartPosition.y - this.mousePosition.y
 
-        const val = M.clamb(this.min, this.max, this.dragInitValue + (distance * this.steps))
+        // Shift key = half speed (double pixels for full rotation)
+        const effectivePixelsPerFullRotation = this.isShiftDown ? this.pixelsPerFullRotation * 2 : this.pixelsPerFullRotation
 
-        console.log(val)
-        this.setValue(val)
+        // Convert pixels to normalized value change (0-1 range)
+        // Constant visual speed: pixelsMoved determines the fraction of full range
+        const normalizedChange = pixelsMoved / effectivePixelsPerFullRotation
+        const rawValueChange = normalizedChange * (this.max - this.min)
+
+        // Calculate new value
+        const newValue = this.dragInitValue + rawValueChange
+
+        this.setValueInternal(newValue, 'drag')
     }
 
     /** On 'mouseup' event callback */
@@ -424,40 +543,68 @@ export class KnobComponent {
         // Click
         // showResetBtn = true
     }
+
     /** On 'keydown' event callback */
     onKeyDown = (e: KeyboardEvent) => {
 
-        // if(e.key === 'Meta') this.steps *= 40
-        // if(e.key === 'Meta') steps /= 4
-
         this.isKeyDown = true
+        if (e.shiftKey && !this.isShiftDown) {
+            this.isShiftDown = true
+            // Adjust drag start position if currently dragging
+            if (this.drag) {
+                this.adjustDragStartForShiftChange()
+            }
+        }
     }
+
     /** On 'keyup' event callback */
     onKeyUp = (e: KeyboardEvent) => {
 
-
-        // if(e.key === 'Meta') this.steps /= 40
-        // if(e.key === 'Meta') steps *= 4
-
         this.isKeyDown = false
+        if (e.key === 'Shift' && this.isShiftDown) {
+            this.isShiftDown = false
+            // Adjust drag start position if currently dragging
+            if (this.drag) {
+                this.adjustDragStartForShiftChange()
+            }
+        }
     }
-    onScroll = (e: any) => {
 
-        if(!e.shiftKey) return
+    /** Adjust drag start position when Shift state changes to prevent jumps */
+    private adjustDragStartForShiftChange = () => {
+        const oldEffectivePixelsPerFullRotation = this.lastDragShiftState ? this.pixelsPerFullRotation * 2 : this.pixelsPerFullRotation
+        const newEffectivePixelsPerFullRotation = this.isShiftDown ? this.pixelsPerFullRotation * 2 : this.pixelsPerFullRotation
+        
+        // Adjust start position so value change remains the same
+        // pixelDistance = dragStart.y - mousePos.y
+        // newDragStart.y = mousePos.y + pixelDistance * (newEffective / oldEffective)
+        const pixelDistance = this.dragStartPosition.y - this.mousePosition.y
+        const scaleFactor = newEffectivePixelsPerFullRotation / oldEffectivePixelsPerFullRotation
+        
+        this.dragStartPosition.y = this.mousePosition.y + pixelDistance * scaleFactor
+        this.lastDragShiftState = this.isShiftDown
+    }
+
+    onScroll = (e: any) => {
         
         e.preventDefault()
         e.stopPropagation()
-        
-        
-        // if(e.wheelDelta > 0) setValue(M.clamb(min, max, M.map(min, max, 0, 1, value - ((1 / steps) * Math.round(Math.abs(e.wheelDelta / 5))))))
-        // else if(e.wheelDelta < 0) setValue(M.clamb(min, max, M.map(min, max, 0, 1, value + ((1 / steps) * Math.round(Math.abs(e.wheelDelta / 5))))))
-        
-        // console.log('knob', this.min, this.max, this.value, this.steps, Math.round(Math.abs(e.wheelDelta)))
 
-        // if(e.wheelDelta > 0) this.setValue(M.clamb(this.min, this.max, this.value - (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
-        // else if(e.wheelDelta < 0) this.setValue(M.clamb(this.min, this.max, this.value + (this.steps * Math.round(Math.abs(e.wheelDelta))) / 30))
-            
+        // Accumulate scroll delta for smoother, less sensitive trackpad control
+        this.scrollAccumulator += e.deltaY
 
+        // Only apply value change when threshold is exceeded
+        if (Math.abs(this.scrollAccumulator) >= this.scrollThreshold) {
+            // Scroll up (negative deltaY) increases value, scroll down decreases
+            const direction = this.scrollAccumulator > 0 ? 1 : -1
+            const steps = Math.floor(Math.abs(this.scrollAccumulator) / this.scrollThreshold)
+            // Shift key = half speed
+            const effectiveStep = this.isShiftDown ? this.step * 0.5 : this.step
+            const valueChange = direction * steps * effectiveStep
+
+            this.setValueInternal(this.value + valueChange, 'input')
+            this.scrollAccumulator = 0
+        }
     }
 
     getTransformStyle() {
@@ -468,9 +615,11 @@ export class KnobComponent {
     ngAfterViewInit() {
 
         this.initValue = this.value
-        this.getAngle()
+        this.updateAngle()
 
-        this.knobDOM.addEventListener('wheel', this.onScroll.bind(this))
+        if (this.knobDOM) {
+            this.knobDOM.addEventListener('wheel', this.onScroll.bind(this))
+        }
     }
 
     ngOnDestroy() {

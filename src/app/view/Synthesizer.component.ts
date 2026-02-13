@@ -13,6 +13,7 @@ import { TrackComponent } from './Track.component'
 import { SequencerComponent } from './Sequencer.component'
 import { KeyComponent } from './Key.component'
 import { LevelMeterComponent } from './LevelMeter.component'
+import { OscilloscopeComponent } from './Oscilloscope.component'
 import { CommonModule } from '@angular/common'
 import { Key } from '../synthesizer/key'
 
@@ -21,7 +22,7 @@ import { Key } from '../synthesizer/key'
      selector: 'sy-synthesizer',
      standalone: true,
      changeDetection: ChangeDetectionStrategy.OnPush,
-     imports: [ CommonModule, DropdownComponent, KnobComponent, TrackComponent, SequencerComponent, KeyComponent, LevelMeterComponent ],
+     imports: [ CommonModule, DropdownComponent, KnobComponent, TrackComponent, SequencerComponent, KeyComponent, LevelMeterComponent, OscilloscopeComponent ],
     template: `
 
 
@@ -85,8 +86,7 @@ import { Key } from '../synthesizer/key'
             </div>
 
 
-
-            <!-- <Oscilloscope output={synthesizer.volume} /> -->
+            <sy-oscilloscope [output]="synthesizer.volume"></sy-oscilloscope>
 
             <!-- <DCMeter output={synthesizer.volume} /> -->
 
@@ -98,7 +98,10 @@ import { Key } from '../synthesizer/key'
                     [value]="synthesizer.volume.volume.value"
                     [min]="-70" 
                     [max]="6" 
-                    (onChange)="synthesizer.setVolume($event)" />
+                    [step]="1"
+                    [precision]="1"
+                    [scaleType]="'logarithmic'"
+                    (onChange)="synthesizer.setVolume($event.detail)" />
             </div>
             
             <!-- <LevelMeter output={synthesizer.volume} value={synthesizer.volume.volume.value} /> -->
