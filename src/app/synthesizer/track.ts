@@ -74,8 +74,8 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
     /** Allow arpegiator to play this tracks instrument. */
     public arpEnabled: boolean
 
-    /** Map to keep track of all active/triggered notes. */
-    public activeNotes: Set<Tone.Unit.Frequency> = new Set()
+    /** Stack of currently pressed keys (maintains order for monophonic note priority) */
+    public activeNotes: Tone.Unit.Frequency[] = []
 
 
     constructor(synthesizer: Synthesizer, instrument?: Instrument) {
@@ -257,7 +257,8 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
     /** Releases all triggered notes */
     releaseNotes() {
 
-        for(let n of this.activeNotes) this.triggerRelease(n, Tone.getContext().currentTime)
+        const notesToRelease = [...this.activeNotes] // Copy array before modifying
+        for(let n of notesToRelease) this.triggerRelease(n, Tone.getContext().currentTime)
 
         if(this.instrument) this.instrument.releaseAll()
     }
@@ -278,9 +279,10 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         let triggerNote = this.applyOctaveOffset(note)
 
-        if(this.instrument.type == InstrumentType.MONO) this.activeNotes.clear()
-
-        this.activeNotes.add(triggerNote)
+        // Add note if not already in stack
+        if(!this.activeNotes.includes(triggerNote)) {
+            this.activeNotes.push(triggerNote)
+        }
 
         this.instrument.triggerAttack(triggerNote, time, velocity)
     }
@@ -298,9 +300,9 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         let triggerNote = this.applyOctaveOffset(note)
         
-        if(this.instrument.type == InstrumentType.MONO) this.activeNotes.clear()
-
-        this.activeNotes.add(triggerNote)
+        if(!this.activeNotes.includes(triggerNote)) {
+            this.activeNotes.push(triggerNote)
+        }
 
         Tone.getTransport().scheduleOnce((t) => {
 
@@ -328,16 +330,31 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         let triggerNote = this.applyOctaveOffset(note)
 
-        this.activeNotes.delete(triggerNote)
+        // Check if this is the currently playing note (last in array)
+        const isCurrentNote = this.activeNotes.length > 0 && this.activeNotes[this.activeNotes.length - 1] === triggerNote
 
+        // Remove note from active notes
+        const noteIndex = this.activeNotes.indexOf(triggerNote)
+        if(noteIndex !== -1) {
+            this.activeNotes.splice(noteIndex, 1)
+        }
 
-        // need?????
-        // if(this.instrument.type == InstrumentType.MONO && (this.activeNotes.size > 0 && !this.activeNotes.has(triggerNote))) {
-
-        //     // console.log('play other note', this.activeNotes)
-        //     // this.triggerAttack(Array.from(this.activeNotes).pop(), time)
-        //     return
-        // }
+        // For monophonic instruments: handle note stacking
+        if(this.instrument.type === InstrumentType.MONO) {
+            
+            // If releasing a non-current note, just ignore (don't release the instrument)
+            if(!isCurrentNote) {
+                return
+            }
+            
+            // If there are still active notes, retrigger the last one
+            if(this.activeNotes.length > 0) {
+                
+                const nextNote = this.activeNotes[this.activeNotes.length - 1] // Last-note-priority
+                this.instrument.triggerAttack(nextNote, time, 1)
+                return
+            }
+        }
 
         this.instrument.triggerRelease(triggerNote, time)
     }
