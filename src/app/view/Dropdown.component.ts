@@ -3,7 +3,7 @@
 
 
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from "@angular/core";
 
 
 @Component({
@@ -119,7 +119,7 @@ import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewC
     
     `
 })
-export class DropdownComponent {
+export class DropdownComponent implements AfterViewInit {
 
     /** Name of Knob */
     @Input('name') name: string = ''
@@ -169,6 +169,14 @@ export class DropdownComponent {
 
         // if(value == undefined && options && options.length > 0) value = options[0]
 
+    }
+
+    ngAfterViewInit() {
+        // After all inputs are set, manually sync the select value
+        const select = this.elementRef.nativeElement.querySelector('select')
+        if(select && this.value) {
+            select.value = this.value
+        }
     }
 
     @HostListener('document:click', ['$event'])

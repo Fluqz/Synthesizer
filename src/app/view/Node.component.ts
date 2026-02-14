@@ -72,7 +72,6 @@ import { CommonModule } from '@angular/common';
                                     <div *ngIf="isDropdown(n.type)">
                                         
                                         <sy-dropdown
-                                            [name]="n.name.charAt(0).toUpperCase() + n.name.slice(1)"
                                             [value]="n.get()"
                                             [options]="n.options"
                                             [fileUpload]="n.fileUpload"

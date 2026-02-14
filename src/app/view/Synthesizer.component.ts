@@ -75,7 +75,6 @@ import { Key } from '../synthesizer/key'
                         
                         <!-- Presets -->
                         <sy-dropdown
-                            [name]="''"
                             [value]="''"
                             [options]="presets"
                             [deletableOptions]="true"

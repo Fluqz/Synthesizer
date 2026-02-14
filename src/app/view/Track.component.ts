@@ -8,7 +8,7 @@ import { Instrument, type Node as _Node } from "../synthesizer/nodes";
 
 import { Storage } from "../core/storage";
 import { getChannelColor } from "../core/colors";
-import { AfterViewInit, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnDestroy, OnChanges, Output, SimpleChanges } from "@angular/core";
 import { DropdownComponent } from "./Dropdown.component";
 import { KnobComponent } from "./Knob.component";
 import { OscilloscopeComponent } from "./Oscilloscope.component";
@@ -19,12 +19,12 @@ import { CommonModule } from "@angular/common";
 
 @Component({
 
-    selector: 'sy-track',
-    standalone: true,
-    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent, OscilloscopeComponent ],
+     selector: 'sy-track',
+     standalone: true,
+     imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent, OscilloscopeComponent ],
     template: `
 
-    <div class="track-wrapper" (click)="onClick($event)">
+    <div *ngIf="track != undefined" class="track-wrapper" (click)="onClick($event)">
 
         <div class="node track-options" [style]="'background-color:' + color" [class.playing]="false" > <!-- todo - not reactive -->
 
@@ -34,7 +34,6 @@ import { CommonModule } from "@angular/common";
 
             <!-- Instrument select -->
             <sy-dropdown
-                [name]="''"
                 [value]="track.instrument.name"
                 [options]="sources"
                 (onSelect)="onChangeInstrument($event)"
@@ -287,30 +286,36 @@ import { CommonModule } from "@angular/common";
 })
 export class TrackComponent implements AfterViewInit, OnDestroy {
 
-    @Input('track') track: Track
-
-    @Output('onDuplicate') onDuplicate: EventEmitter<Track> = new EventEmitter()
-    @Output('onDelete') onDelete: EventEmitter<Track> = new EventEmitter()
-
-    color: string
-
-    sources: string[]
-    effects: string[]
-
-    constructor() {
-
-        this.sources = Object.keys(Synth.nodes.sources)
-        this.effects = Object.keys(Synth.nodes.effects)
+    private _track: Track
+    @Input('track') 
+    set track(t: Track) { 
+        this._track = t 
+        this.cdr.markForCheck()
     }
+    get track() { return this._track }
 
-    
-    ngAfterViewInit() {
-        
-        this.color = getChannelColor(this.track.channel)
-    }
+
+     @Output('onDuplicate') onDuplicate: EventEmitter<Track> = new EventEmitter()
+     @Output('onDelete') onDelete: EventEmitter<Track> = new EventEmitter()
+
+     color: string
+
+     sources: string[]
+     effects: string[]
+
+     constructor(private cdr: ChangeDetectorRef) {
+
+         this.sources = Object.keys(Synth.nodes.sources)
+         this.effects = Object.keys(Synth.nodes.effects)
+     }
+
+     ngAfterViewInit() {
+         
+         this.color = getChannelColor(this.track.channel)
+         this.cdr.markForCheck()
+     }
     ngOnDestroy() {
 
-        console.error('ngOnDestroy')
     }
 
     onVolumeChange = (e) => {
