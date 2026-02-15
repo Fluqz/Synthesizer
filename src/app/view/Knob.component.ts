@@ -1,7 +1,7 @@
 import { fromEvent, Observable, Subscription } from "rxjs";
 import { M } from "../util/math"
 import { Vec2 } from "../util/math";
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnInit, OnChanges, AfterViewInit, OnDestroy, SimpleChanges } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnInit, OnChanges, AfterViewInit, OnDestroy, SimpleChanges, ChangeDetectionStrategy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
 
@@ -11,6 +11,7 @@ import { CommonModule } from "@angular/common";
     selector: 'sy-knob',
     standalone: true,
     imports: [ CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     
 

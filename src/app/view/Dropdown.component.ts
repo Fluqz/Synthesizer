@@ -3,13 +3,14 @@
 
 
 import { CommonModule } from "@angular/common";
-import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from "@angular/core";
+import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild } from "@angular/core";
 
 
 @Component({
     selector: 'sy-dropdown',
     standalone: true,
     imports: [ CommonModule ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     
 

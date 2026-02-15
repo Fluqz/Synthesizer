@@ -4,7 +4,7 @@ import { Sequencer, type NoteLength, type SequenceObject } from "../synthesizer/
 import { Storage } from "../core/storage";
 import { BeatMachine } from "../synthesizer/beat-machine";
 import { timer, type Subscription } from "rxjs";
-import { ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, ViewChild } from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, ViewChild } from "@angular/core";
 import { NoteComponent } from "./Note.component";
 import { CommonModule } from "@angular/common";
 import { Synthesizer } from "../synthesizer/synthesizer";
@@ -44,6 +44,7 @@ export interface DragState {
     selector: 'sy-timeline',
     standalone: true,
     imports: [ CommonModule, NoteComponent ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
 
 
@@ -88,11 +89,13 @@ export interface DragState {
 
                         <sy-note [note]="getSequenceObject(note)"
                                 (pointerdown)="notePointerDown($event, note)"
+                                (pointerup)="notePointerUp($event, note)"
                                 (onDelete)="removeNote(note)"
                                 [sequencer]="sequencer"
                                 [timelineRect]="timelineRect"
                                 [yPos]="noteYArray[i]"
-                                [height]="noteHeight">
+                                [height]="noteHeight"
+                                [isSelected]="_clickedSequenceObjectID != null && _clickedSequenceObjectID == note.id">
                             
                                             
                             <div class="drag-handle drag-start"
@@ -297,6 +300,9 @@ export interface DragState {
     /** Observable of the Beat for timeline */
     timelineObserver: Subscription
 
+    /** Reference to currently dragged note element for direct DOM updates */
+    private draggedNoteElement: HTMLElement | null = null
+
     /** Timeline HTML element ref */
     @ViewChild('timeline')
     private _timeline: ElementRef<HTMLElement>
@@ -313,6 +319,9 @@ export interface DragState {
     /** Timeline's client rect object */
     timelineRect: DOMRect
 
+    /** Stored ID of a currently clicked SequnceObject. */
+    public _clickedSequenceObjectID: number | null = null
+
     /** Selected note object */
     private selectedNote: SequenceObject
     /** Temporary object for altering the selected note */
@@ -321,14 +330,20 @@ export interface DragState {
     private isPointerDown = false
     private isNoteDrag = false
     private noteEle: HTMLElement
+    /** X Offset of mouse to element origin  */
     private clickOffsetX: number = 0
-    private clickOffsetY: number = 0
+    /** Client X */
+    private pointerPositionX: number = 0
+    /** Client Y */
+    private pointerPositionY: number = 0
+    private pointerMovedAmount: number = 0
+
     private noteRect: DOMRect
     
     constructor(public cdr: ChangeDetectorRef) {}
 
     @HostListener('window:resize', ['$event'])
-    private onResize(e) {
+    onResize(e) {
 
         this.update()
     }
@@ -361,6 +376,8 @@ export interface DragState {
         })
 
         this.update()
+
+        this.cdr.markForCheck()
     }
 
     getBarArray() {
@@ -421,6 +438,7 @@ export interface DragState {
         }
     }
 
+
     /** DblClick Timeline event */
     onTimelineDblClick(e: MouseEvent) {
 
@@ -448,6 +466,7 @@ export interface DragState {
         // console.log('onTimelineClick')
 
         this.selectedNote = null
+        this._clickedSequenceObjectID = null
 
         this.update()
 
@@ -515,6 +534,10 @@ export interface DragState {
 
         e.stopPropagation()
 
+        // Reset stored click ID on mouse down
+        this._clickedSequenceObjectID = null
+        this.pointerMovedAmount = 0
+        
         if(e.target instanceof HTMLInputElement) return
         
         this.noteEle = e.target.closest('.note')
@@ -524,10 +547,14 @@ export interface DragState {
         this.noteRect = this.noteEle.getBoundingClientRect()
 
         this.isPointerDown = true
+        
+        this.draggedNoteElement = this.noteEle as HTMLElement
 
         this.selectedNote = note
         this.clickOffsetX = e.pageX - this.noteRect.left
-        this.clickOffsetY = e.clientY - this.noteRect.top
+
+        this.pointerPositionX = e.clientX
+        this.pointerPositionY = e.clientY
 
         this.alteredSequenceObject = {
 
@@ -553,9 +580,15 @@ export interface DragState {
         if(!this.isPointerDown) return
         if(!this.noteEle) return
         if(this.dragState.active && this.dragState.type?.includes('resize')) return
-        if(!this.selectedNote) return
+        if(!this.selectedNote || !this.draggedNoteElement) return
 
-        console.log('notePointerMove')
+        
+        this.pointerMovedAmount += Math.sqrt(Math.pow(e.clientX - this.pointerPositionX, 2) + Math.pow(e.clientY - this.pointerPositionY, 2))
+
+        this.pointerPositionX = e.clientX
+        this.pointerPositionY = e.clientY
+        
+        console.log('notePointerMove', this.pointerMovedAmount)
 
         this.isNoteDrag = true
         document.body.style.cssText = 'cursor: grabbing !important;'
@@ -592,30 +625,29 @@ export interface DragState {
         const currentTime = typeof this.alteredSequenceObject.time === 'number' ? this.alteredSequenceObject.time : 0
         if(Math.abs(currentTime - time) > 0.0001) {
             this.alteredSequenceObject.time = time
-            this.cdr.detectChanges()
+            // Update DOM directly for smooth drag (no change detection)
+            this.draggedNoteElement.style.left = posX + 'px'
         }
 
         this.updateWrapperHeight()
     }
 
+    /** TODO - mouseup instead of pointerup. Pointerup doesnt work why? */
     @HostListener('document:mouseup', ['$event'])
-    onMouseUp(e) {
+    onDocPointerUp(e:PointerEvent) {
 
         e.stopPropagation()
-
-        this.notePointerUp(e)
-        this.resizeNoteEndHandler(e)
-    } 
-
-    notePointerUp = (e) => {
-
-        if(this.dragState.active && this.dragState.type?.includes('resize')) return
-
-        console.log('notePointerUp')
 
         this.isPointerDown = false
         document.body.style.cursor = 'default'
 
+        this.onPointerUp(e)
+        this.resizeNoteEndHandler(e)
+    } 
+
+    onPointerUp = (e) => {
+
+        if(this.dragState.active && this.dragState.type?.includes('resize')) return
         
         if(this.selectedNote && this.selectedNote.id == this.alteredSequenceObject.id) {
 
@@ -637,21 +669,40 @@ export interface DragState {
 
         if(this.isNoteDrag) {
 
+            // Clear manual DOM styles so binding takes over
+            if(this.draggedNoteElement) {
+                this.draggedNoteElement.style.left = ''
+            }
+
             this.selectedNote = null
             this.alteredSequenceObject = null
             
             this.clickOffsetX = 0
-            this.clickOffsetY = 0
             
             this.noteRect = null
 
             this.isNoteDrag = false
+            this.draggedNoteElement = null
             
             // Update view after drag ends
             this.cdr.markForCheck()
         }
     }
 
+    notePointerUp(e: PointerEvent, note: SequenceObject) {
+
+        e.stopPropagation()
+
+        console.log('up',this.pointerPositionX, this.pointerPositionY, e.clientX, e.clientY)
+
+        const maxRange = 1
+
+        if(this.pointerMovedAmount < maxRange) {
+
+            this._clickedSequenceObjectID = note.id
+        }
+        else this._clickedSequenceObjectID = null
+    }
 
     /**
      * Start resizing a note (handle pointerdown)
@@ -664,6 +715,10 @@ export interface DragState {
         e.stopPropagation()
 
         const target = e.currentTarget as HTMLElement
+        
+        // Get the note element (parent of drag handle)
+        this.draggedNoteElement = target.closest('.note') as HTMLElement
+        
         this.dragState = {
             active: true,
             type: which === 'start' ? 'resize-start' : 'resize-end',
@@ -687,7 +742,7 @@ export interface DragState {
     resizeNoteMoveHandler = (e: PointerEvent) => {
 
         if(!this.dragState.active || !this.dragState.type?.includes('resize')) return
-        if(!this.selectedNote) return
+        if(!this.selectedNote || !this.draggedNoteElement) return
 
         const deltaX = e.clientX - this.dragState.startClientX
         // Convert pixels to bar units
@@ -721,8 +776,16 @@ export interface DragState {
         this.alteredSequenceObject.time = newStartTime
         this.alteredSequenceObject.length = newEndTime - newStartTime
 
-        // Update view during drag
-        this.cdr.detectChanges()
+        // Update DOM directly for smooth drag (no change detection)
+        const newWidth = ((newEndTime - newStartTime) / this._bars) * this.timelineRect.width
+        
+        // Only update left position when dragging start handle
+        if(this.dragState.handle === 0) {
+            const newLeft = ((newStartTime / this._bars) * this.timelineRect.width)
+            this.draggedNoteElement.style.left = newLeft + 'px'
+        }
+        
+        this.draggedNoteElement.style.width = newWidth + 'px'
     }
 
     /**
@@ -746,6 +809,14 @@ export interface DragState {
             this.saveUndo()
         }
 
+        // Clear manual DOM styles so binding takes over (only for start handle)
+        if(this.draggedNoteElement) {
+            if(this.dragState.handle === 0) {
+                this.draggedNoteElement.style.left = ''
+            }
+            this.draggedNoteElement.style.width = ''
+        }
+
         // Reset drag state
         this.dragState = {
             active: false,
@@ -761,6 +832,7 @@ export interface DragState {
 
         this.selectedNote = null
         this.alteredSequenceObject = null
+        this.draggedNoteElement = null
         
         // Update view after drag ends
         this.cdr.markForCheck()

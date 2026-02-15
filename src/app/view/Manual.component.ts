@@ -2,13 +2,14 @@
 
 
 
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 
 
 @Component({
 
     selector: 'sy-manual',
     standalone: true,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
 
     <div class="manual-wrapper" class:active={active}>

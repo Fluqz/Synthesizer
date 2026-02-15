@@ -6,7 +6,7 @@ import * as Tone from "tone";
 import { Synthesizer, type Channel } from "../synthesizer/synthesizer";
 import { type NoteLength, type SequenceObject, Sequencer } from "../synthesizer/sequencer";
 import { Storage } from "../core/storage";
-import { AfterViewInit, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
+import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
 import { TimelineComponent } from "./Timeline.component";
 import { getChannelColor } from "../core/colors";
 import { CommonModule } from "@angular/common";
@@ -34,6 +34,7 @@ export const convertNoteLength = (n: NoteLength) => {
     selector: 'sy-sequencer',
     standalone: true,
     imports: [ CommonModule, TimelineComponent, FormsModule ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
 
     <div *ngIf="sequencer != undefined" class="sequencer-wrapper">

@@ -31,10 +31,12 @@ export class G {
         Visual.init()
 
         Tone.getDestination().volume.setValueAtTime(Number.NEGATIVE_INFINITY, Tone.getContext().currentTime)
+
     }
 
     static start() {
 
+        Tone.getTransport().position = 0
         Tone.start()
         Tone.getTransport().start()
 

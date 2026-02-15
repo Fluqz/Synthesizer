@@ -1,7 +1,7 @@
 
 
 
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import type { MenuNavigation } from '../core/definitions';
 import { SettingsComponent } from './Settings.component';
 import { ManualComponent } from './Manual.component';
@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
     selector: 'sy-menu',
     standalone: true,
     imports: [ CommonModule, SettingsComponent, ManualComponent ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     
 

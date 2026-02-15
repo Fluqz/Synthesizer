@@ -150,6 +150,8 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
 
     constructor(private ngZone: NgZone) {
 
+        // Tone.setContext(new AudioContext({ sampleRate: 22050 }))
+        
         // Create Synthesizer
         this.synthesizer = G.synthesizer = new Synthesizer()
 
@@ -226,6 +228,7 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
         this.activityUpdate()
       })
     }
+    
     // On document ready
     ngAfterContentInit() {
 

@@ -50,6 +50,8 @@ export class BeatMachine {
 
         BeatMachine._isPlaying = true
 
+        Tone.getTransport().start()
+
         // Bar boundary loop (fires every 4/4 beat)
         this.loop = new Tone.Loop((time: number) => {
 
@@ -81,6 +83,10 @@ export class BeatMachine {
     static stop() {
 
         if(!BeatMachine._isPlaying) return
+
+        Tone.getTransport().stop()
+        Tone.getTransport().cancel()   // removes all scheduled events
+        Tone.getTransport().position = 0
 
         // Stop both loops immediately
         this.loop.stop(0)

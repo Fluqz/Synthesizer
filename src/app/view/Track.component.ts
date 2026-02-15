@@ -19,9 +19,11 @@ import { CommonModule } from "@angular/common";
 
 @Component({
 
-     selector: 'sy-track',
-     standalone: true,
-     imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent, OscilloscopeComponent ],
+    selector: 'sy-track',
+    standalone: true,
+    imports: [ CommonModule, DropdownComponent, KnobComponent, NodeComponent, LevelMeterComponent, OscilloscopeComponent ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+
     template: `
 
     <div *ngIf="track != undefined" class="track-wrapper" (click)="onClick($event)">
@@ -156,8 +158,6 @@ import { CommonModule } from "@angular/common";
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
-
-        // border: .5px solid var(--c-b);
     }
 
     .track-wrapper .track-options {

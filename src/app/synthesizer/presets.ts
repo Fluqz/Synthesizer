@@ -918,7 +918,7 @@ export const DEFAULT_PRESETS: IPreset[] =
   [
     {
         "bpm": 120,
-        "volume": -10.874444444444421,
+        "volume": -10,
         "octave": 2,
         "channel": 0,
         "tracks": [
@@ -1261,7 +1261,7 @@ export const DEFAULT_PRESETS: IPreset[] =
                 "index": 9,
                 "octaveOffset": 0,
                 "channel": 13,
-                "volume": -2.9999999999999716,
+                "volume": 0,
                 "instrument": {
                     "name": "Sampler",
                     "enabled": true,

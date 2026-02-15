@@ -239,6 +239,9 @@ import { Key } from '../synthesizer/key'
         color: var(--c-b);
     }
 `,
+    host: {
+        '(window:scroll)': 'onScroll($event)',
+    }
 
 })
 export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
@@ -257,6 +260,8 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
     presetInputValue: string
 
     keys: Key[]
+
+    private _scrollTOID
 
     get isPlaying() : boolean { return G.isPlaying }
 
@@ -293,6 +298,7 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     ngAfterContentInit(): void {
 
+        this.scrollToBottom()
     }
 
     addTrack() {
@@ -303,8 +309,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         this.scrollToBottom()
 
         this.saveUndo()
-
-
 
         return t
     }
@@ -386,27 +390,30 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     stopAllSequencers() {
 
-        // BeatMachine.stop()
-        
-        // Tone.getTransport().position = 0
-
         _Sequencer.startTime = undefined
 
         for(let seq of this.synthesizer.sequencers) seq.stop()
     }
+
+    onScroll(e) {
+
+        if(this._scrollTOID) clearTimeout(this._scrollTOID)
+    }
     
     scrollToBottom() {
 
-        // setTimeout(() => {
+        this._scrollTOID = setTimeout(() => {
 
-        //     window.scrollTo({
-        //         top: 1000000000,
-        //         left: 0,
-        //         behavior: 'smooth',
+            window.scrollTo({
+                top: window.innerHeight,
+                left: 0,
+                behavior: 'smooth',
                 
-        //     });
+            });
 
-        // }, 0)
+            this._scrollTOID = null
+
+        }, 0)
     }
 
     onChannel(e) {
@@ -515,7 +522,10 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
     setPresets() {
 
         if(this.presets == undefined) this.presets = []
-        this.presets.length = 0
+        else this.presets.length = 0
+
+        this.presets.push('')
+        
         for(let p of this.synthesizer.presetManager.getPresets()) this.presets.push(p.name)
     }
 

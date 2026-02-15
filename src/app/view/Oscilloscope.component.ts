@@ -1,12 +1,13 @@
 
 import * as Tone from "tone";
-import { Component, ElementRef, Input, ViewChild, Renderer2 } from "@angular/core";
+import { Component, ChangeDetectionStrategy, ElementRef, Input, ViewChild, Renderer2 } from "@angular/core"
 
 
 @Component({
 
   selector: 'sy-oscilloscope',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     
   <div id="oscilloscope" title="Oscilloscope" #container>

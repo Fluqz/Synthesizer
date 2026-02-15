@@ -3,7 +3,7 @@ import * as Tone from "tone";
 import { Synthesizer } from "../synthesizer/synthesizer";
 import { Sequencer, type SequenceObject } from "../synthesizer/sequencer";
 import { Storage } from "../core/storage";
-import { Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, input, Input, OnDestroy, Output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 
 
@@ -12,45 +12,47 @@ import { CommonModule } from "@angular/common";
 
     selector: 'sy-note',
     standalone: true,
-    imports: [ CommonModule ],
+    imports: [ CommonModule ],     
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    
     template: `
         
     <div *ngIf="sequencer != undefined" class="note-wrapper">
 
-    <div class="note" 
-           [class.selected]="isSelected"
-           (dblclick)="onNoteDblClick($event, note)"
-           [style.top.px]="yPos"
-           [style.height.px]="height"
-           [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
-           [style.width.px]="getNoteWidth()">
+        <div class="note" 
+            [class.selected]="isSelected"
+            (dblclick)="onNoteDblClick($event, note)"
+            [style.top.px]="yPos"
+            [style.height.px]="height"
+            [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
+            [style.width.px]="getNoteWidth()">
 
-        <ng-content></ng-content>
+            <!-- Compact view (default) -->
+            <div class="note-display">
+                {{ noteDisplayText + octaveDisplayText }}
+            </div>
 
-        <!-- Compact view (default) -->
-        <div class="note-display">
-            {{ getNote(note) }}{{ getOctave(note) }}
-        </div>
-
-        <!-- Expanded view (on hover via CSS) -->
-        <div class="note-controls">
-            <div class="control-group">
-                <div class="btn note-btn"
-                        title="Note - Click to increase; Shift - Click to decrease" 
-                        (pointerup)="onNoteClick($event, note)">
-                    {{ getNote(note) }}
-                </div>
-                <div class="btn octave-btn"
-                        title="Octave - Click to increase; Shift - Click to decrease" 
-                        (pointerup)="onOctaveClick($event, note)">
-                    {{ getOctave(note) }}
+            <!-- Expanded view (on hover via CSS) -->
+            <div class="note-controls" [class.selected]="isSelected" (dblclick)="onNoteControlDblClick($event)">
+                <div class="control-group">
+                    <div class="btn note-btn"
+                            title="Note - Click to increase; Shift - Click to decrease" 
+                            (pointerdown)="onPointerDown($event, note)"
+                            (pointerup)="onChangeNote($event, note)">
+                        {{ noteDisplayText }}
+                    </div>
+                    <div class="btn octave-btn"
+                            title="Octave - Click to increase; Shift - Click to decrease" 
+                            (pointerdown)="onPointerDown($event, note)"
+                            (pointerup)="onOctaveClick($event, note)">
+                        {{ octaveDisplayText }}
+                    </div>
                 </div>
             </div>
+            
+            <div class="velocity" [style.height]="velocity * 100 + '%'"></div>
+            
         </div>
-        
-        <div class="velocity" [style.height]="velocity * 100 + '%'"></div>
-        
-    </div>
 
     </div>
 
@@ -78,7 +80,6 @@ styles: `
 
         text-align: center;
         display: flex;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
 
@@ -105,34 +106,28 @@ styles: `
         opacity: 1;
     }
 
-    /* Hide compact display on hover over center area */
-    .note:hover:not(:hover .drag-handle) .note-display {
-        opacity: 0;
-        pointer-events: none;
-    }
-
     /* Expanded controls - hidden by default, shown on hover */
     .note-controls {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        top: 0px;
+        left: 0px;
         background-color: var(--c-y);
         z-index: 10;
         display: flex;
-        flex-direction: column;
+        flex-direction: center;
         justify-content: center;
         align-items: center;
-        gap: 1px;
-        padding: 2px;
-        opacity: 0;
         pointer-events: none;
+
+        overflow: hidden;
+        width: 0px;
+        height: 0px;
     }
 
-    /* Show expanded controls when hovering over the note */
-    .note:hover .note-controls {
-        opacity: 1;
+    .note-controls.selected {
+
+        width: 100%;
+        height: 100%;
     }
 
     /* Only buttons are clickable in controls, not the overlay itself */
@@ -144,28 +139,23 @@ styles: `
         pointer-events: auto;
     }
 
-    /* Drag handles always on top and interactive */
-    ::ng-deep .note .drag-handle {
-        z-index: 20;
-        pointer-events: auto;
-    }
-
+    
     .note-controls .control-group {
         display: flex;
-        flex-direction: column;
-        gap: 1px;
         width: 100%;
+        height: 100%;
     }
 
     .note .btn {
         z-index: 2;
-        padding: 1px 2px;
         min-width: 30px;
         width: 50%;
+        height: 100%;
         font-size: 8px;
         cursor: pointer;
         color: inherit;
-        line-height: 1;
+
+        transition: unset;
     }
 
     .note .btn:hover {
@@ -174,24 +164,25 @@ styles: `
     }
 
     .note .btn:active {
-        transform: scale(0.95);
+        background-color: rgba(0, 0, 0, 0.6);
     }
 
     /* Resize handles on left and right edges - much larger and more visible */
     ::ng-deep .note .drag-handle {
-        z-index: 3;
         position: absolute;
         top: 0px;
         height: 100%;
-        width: 12px;
+        width: 5px;
         cursor: ew-resize;
         background: rgba(255, 255, 255, 0.2);
         user-select: none;
         touch-action: none;
+        z-index: 20;
+        pointer-events: auto;
     }
 
     ::ng-deep .note .drag-handle:hover {
-        width: 16px;
+        width: 10px;
         background: rgba(255, 255, 255, 0.6);
     }
 
@@ -246,7 +237,15 @@ export class NoteComponent implements OnDestroy {
     @Input('note') 
     set note(note: SequenceObject) {
 
+        const oldNote = this._note
         this._note = note
+
+        console.log('set note')
+        if(oldNote != note) {
+            
+            this.noteDisplayText = this.getNote(this._note)
+            this.octaveDisplayText = this.getOctave(this._note)
+        }
     }
     get note(): SequenceObject { return this._note }
 
@@ -266,13 +265,21 @@ export class NoteComponent implements OnDestroy {
     rows: number = 1
     wrapperHeight: number = 100
 
+    public noteDisplayText: string = ''
+    public octaveDisplayText: string = ''
 
-    constructor() {}
+    constructor(public cdr: ChangeDetectorRef) {}
 
 
     getSeconds(t: Tone.Unit.Time) {
 
         return Tone.Time(t).toSeconds()
+    }
+
+    onPointerDown(e:PointerEvent, note: SequenceObject) {
+
+        e.stopPropagation()
+        e.stopImmediatePropagation()
     }
 
     /** DblClick Note Event 
@@ -284,6 +291,11 @@ export class NoteComponent implements OnDestroy {
 
         this.onDelete.next(this.note)
     }
+
+    onNoteControlDblClick(e) {
+
+        e.stopPropagation()
+    } 
 
     getNote(note: SequenceObject) {
 
@@ -314,7 +326,7 @@ export class NoteComponent implements OnDestroy {
      * Change note (key) on click
      * Click: next note, Shift+Click: previous note
      */
-    onNoteClick(e: MouseEvent, note: SequenceObject) {
+    onChangeNote(e: MouseEvent, note: SequenceObject) {
 
         e.stopPropagation()
 
@@ -342,6 +354,12 @@ export class NoteComponent implements OnDestroy {
             note.length,
             note.velocity
         )
+
+        this.noteDisplayText = Synthesizer.notes[i]
+
+        console.log('change note', this.noteDisplayText)
+
+        this.cdr.detectChanges()
 
         this.saveUndo()
     }
@@ -379,7 +397,14 @@ export class NoteComponent implements OnDestroy {
             note.velocity
         )
 
+        this.octaveDisplayText = Synthesizer.octaves[i].toString()
+
+        console.log('change octave', this.octaveDisplayText)
+
+        this.cdr.detectChanges()
+
         this.saveUndo()
+
     }
 
     onDeleteHandler() {

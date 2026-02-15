@@ -4,7 +4,7 @@ import { Storage } from '../core/storage'
 import { G } from '../globals'
 
 import { type Node, type NodeParameter, type NodeParameterGroup, type GroupID, Instrument, Effect, type DropDownNodeParameter, ParamType } from "../synthesizer/nodes";
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
 import { DropdownComponent } from './Dropdown.component';
 import { KnobComponent } from './Knob.component';
 import { CommonModule } from '@angular/common';
@@ -16,6 +16,7 @@ import { CommonModule } from '@angular/common';
     selector: 'sy-node',
     standalone: true,
     imports: [ CommonModule, DropdownComponent, KnobComponent ],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     
 
