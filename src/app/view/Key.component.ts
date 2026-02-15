@@ -61,7 +61,6 @@ import { Key } from "../synthesizer/key";
 
         /* border-radius: 3px; */
 
-        transition: .4s transform;
         z-index: 0;
 
         border: .5px solid var(--c-b);

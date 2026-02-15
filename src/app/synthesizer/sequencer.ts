@@ -77,8 +77,8 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         this.isPlaying = false
         this.loop = true
 
-        this.noteLength = '1/16'
-        this.bars = 1
+        this.noteLength = '1/4'
+        this.bars = 4
     }
 
 
@@ -286,7 +286,7 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         return toneSequence
     }
 
-    /** Internal: Start sequence using BeatMachine for bar-aligned playback */
+    /** Internal: Start sequence immediately (no delay) */
     private startSequence(sequence: SequenceObject[]) {
 
         if(this.toneSequence) {
@@ -299,22 +299,25 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
 
         this.toneSequence = this.createToneSequence()
 
-        // Schedule to start on next bar boundary for timing accuracy
-        BeatMachine.scheduleNextBeat(beatTime => {
+        // Get current transport position
+        const transportPos = Tone.getTransport().position as number
+        
+        // Snap to nearest bar boundary for better sync between sequencers
+        const barDurationSeconds = Tone.Time('1b').toSeconds()
+        const transportSeconds = typeof transportPos === 'number' ? transportPos : Tone.Time(transportPos).toSeconds()
+        const snappedPos = Math.round(transportSeconds / barDurationSeconds) * barDurationSeconds
+        
+        this.toneSequence.start(snappedPos, 0)
 
-            console.log('Sequencer', this.id, 'starting at bar boundary, beat time:', beatTime)
+        // Only set global startTime on first sequencer start
+        if(Sequencer.startTime == undefined) {
+            Sequencer.startTime = snappedPos
+        }
+        
+        this.startTime = snappedPos
+        this.isPlaying = true
 
-            this.toneSequence.start(beatTime, 0)
-
-            if(Sequencer.startTime == undefined) Sequencer.startTime = beatTime
-            
-            this.startTime = beatTime
-
-            this.isPlaying = true
-
-        })
-
-        return this.toneSequence
+         return this.toneSequence
     }
 
     stop() {

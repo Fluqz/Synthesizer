@@ -176,7 +176,6 @@
   
     /* border-radius: 100%; */
   
-    transition: .4s background-color, .4s color;
   
     cursor: pointer;
   }
@@ -229,8 +228,6 @@
   
     background-color: var(--c-y);
     color: var(--c-b);
-  
-    transition: .4s background-color;
   }
   .btn input:focus,
   .btn input:hover,

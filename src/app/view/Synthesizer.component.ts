@@ -40,14 +40,21 @@ import { Key } from '../synthesizer/key'
 
             <div class="add-sequencer btn" title="Add Sequencer" (click)="addSequencer()">&#x2b;</div>
 
-            <div class="start-all-sequencer btn" title="Start all Sequencers" (click)="startAllSequencers()">{{'>>'}}</div>
-            <div class="stop-all-sequencer btn" title="Stop all Sequencers" (click)="stopAllSequencers()">{{'<<'}}</div>
+            <div class="toggle-sequencers btn" [class.active]="areSequencersPlaying" title="Play / Stop all Sequencers" (click)="toggleSequencersPlayStop()">{{ areSequencersPlaying ? '⏸' : '▶' }}</div>
 
             <div id="mute" class="btn" [class.active]="synthesizer.isMuted" title="Mute" (click)="mute()">M</div>
 
-            <div id="play-btn" class="btn" title="Play | Stop" [class.active]="isPlaying" (click)="togglePlayStop()">{{ isPlaying ? '-' : '>'}}</div>
-
-            <div id="bpm-btn" class="btn" title="BPM"><input type="number" [value]="synthesizer.bpm" pattern="[0-1]" step="1" min="1" max="400" /></div>
+            <div id="bpm-btn" title="BPM">
+                <sy-knob 
+                    [name]="'BPM'"
+                    [value]="synthesizer.bpm"
+                    [min]="1" 
+                    [max]="240" 
+                    [step]="0.1"
+                    [precision]="1"
+                    [scaleType]="'linear'"
+                    (onChange)="synthesizer.bpm = $event.detail" />
+            </div>
 
             <div id="channel-btn" class="btn" title="Channel - Key: Arrow Up / Down | Click to increase | Click with SHIFT to decrease" (click)="onChannel($event)">{{ synthesizer.channel }}</div>
 
@@ -192,6 +199,17 @@ import { Key } from '../synthesizer/key'
         justify-content: space-evenly;
     }
 
+    .synthesizer-menu .btn {
+
+        background-color: transparent;
+        color: var(--c-y);
+    }
+
+    .synthesizer-menu .btn:hover {
+
+        background-color: var(--c-y);;
+        color: var(--c-b);
+    }
 
     #presets>div {
         display: inline-block;
@@ -238,6 +256,19 @@ import { Key } from '../synthesizer/key'
         background-color: var(--c-w);
         color: var(--c-b);
     }
+
+    #bpm-btn {
+
+        width: 50px;
+        text-align: center;
+    }
+    #bpm-btn input {
+
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
 `,
     host: {
         '(window:scroll)': 'onScroll($event)',
@@ -264,6 +295,10 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
     private _scrollTOID
 
     get isPlaying() : boolean { return G.isPlaying }
+
+    get areSequencersPlaying(): boolean {
+        return this.synthesizer?.sequencers.some(seq => seq.isPlaying) ?? false
+    }
 
 
     constructor(private cdr: ChangeDetectorRef) {
@@ -369,30 +404,65 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
         if(this.synthesizer.sequencers.length === 0) return
 
-        // Start all sequencers synchronized at the next beat for sample-accurate timing
+        // If transport is already running, stop it first, then reset and restart
+        if(Tone.getTransport().state === 'started') {
+            Tone.getTransport().stop()
+            Tone.getTransport().cancel()
+        }
+
+        // Reset transport position to 0
+        // Notes are scheduled at absolute positions, so transport must start from 0
+        Tone.getTransport().position = 0
+
+        // Start BeatMachine (global transport)
         BeatMachine.start()
 
         _Sequencer.startTime = undefined
 
-        BeatMachine.scheduleNextBeat((beatTime) => {
+        // Start all sequencers immediately (no delay)
+        for(let seq of this.synthesizer.sequencers) {
+            seq.start()
+        }
 
-            console.log('Starting all sequencers at beat time:', beatTime)
-
-            for(let seq of this.synthesizer.sequencers) {
-                seq.startAtTime(beatTime)
-            }
-
-            this.synthesizer = this.synthesizer
-            this.synthesizer.sequencers = this.synthesizer.sequencers
-            this.synthesizer.components = this.synthesizer.components
-        })
+        this.synthesizer = this.synthesizer
+        this.synthesizer.sequencers = this.synthesizer.sequencers
+        this.synthesizer.components = this.synthesizer.components
     }
 
     stopAllSequencers() {
 
         _Sequencer.startTime = undefined
 
+        // Stop all sequencers
         for(let seq of this.synthesizer.sequencers) seq.stop()
+
+        // Stop global transport
+        BeatMachine.stop()
+    }
+
+    /**
+     * Toggle play/stop for all sequencers
+     */
+    toggleSequencersPlayStop() {
+        if(this.areSequencersPlaying) {
+            this.stopAllSequencers()
+        } else {
+            this.startAllSequencers()
+        }
+        this.cdr.markForCheck()
+    }
+
+    /**
+     * Set BPM on the synthesizer
+     */
+    setBpm(e: Event) {
+        const input = e.target as HTMLInputElement
+        const bpmValue = parseInt(input.value)
+        
+        if(isNaN(bpmValue) || bpmValue < 1 || bpmValue > 400) return
+        
+        this.synthesizer.bpm = bpmValue
+        this.saveUndo()
     }
 
     onScroll(e) {
@@ -588,33 +658,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         this.synthesizer = this.synthesizer
 
         this.saveUndo()
-    }
-
-    /**
-     * Toggle playback - starts/stops all sequencers and the transport
-     */
-    togglePlayStop() {
-
-        if(!G.isPlaying) {
-            // Start transport and all active sequencers
-            G.start()
-            
-            // If there are sequencers, start them all synchronized
-            if(this.synthesizer.sequencers.length > 0) {
-                this.startAllSequencers()
-            }
-            
-            console.log('START Transport', Tone.getTransport().now())
-        }
-        else {
-            // Stop all sequencers and transport
-            this.stopAllSequencers()
-            Tone.getTransport().stop()
-            
-            console.log('STOP Transport')
-        }
-
-        G.isPlaying = !G.isPlaying
     }
 
     getTrack(c: ComponentType) {

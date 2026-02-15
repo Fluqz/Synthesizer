@@ -36,9 +36,9 @@ export class G {
 
     static start() {
 
-        Tone.getTransport().position = 0
+        // Only start the Web Audio context, NOT the transport
+        // The transport should only start when actually playing sequencers
         Tone.start()
-        Tone.getTransport().start()
 
         this.isPlaying = true
 

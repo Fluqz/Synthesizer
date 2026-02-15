@@ -4,7 +4,7 @@ import { Sequencer, type NoteLength, type SequenceObject } from "../synthesizer/
 import { Storage } from "../core/storage";
 import { BeatMachine } from "../synthesizer/beat-machine";
 import { timer, type Subscription } from "rxjs";
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, ViewChild } from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnDestroy, Output, ViewChild } from "@angular/core";
 import { NoteComponent } from "./Note.component";
 import { CommonModule } from "@angular/common";
 import { Synthesizer } from "../synthesizer/synthesizer";
@@ -65,21 +65,26 @@ export interface DragState {
 
                     @for(_ of barArray; track _; let bar = $index) {
 
-                        <div class="bar" 
-                                [style.width.px]="barWidth"
-                                [style.left.px]="barPositionArray[bar]">
+                         <div class="bar" 
+                                 [style.width.px]="barWidth"
+                                 [style.left.px]="barPositionArray[bar]">
 
-                            @for(__ of barDivisionsArray; track __; let noteLine = $index) {
+                             @for(q of quarterNoteArray; track q; let quarterIdx = $index) {
 
-                                <div class="note-line" [style.left.px]="((((timelineRect.width / bars) / barDivisions) * noteLine) - .5)"></div>
-                            }
+                                 <div class="quarter-note-marker" [style.left.px]="((((timelineRect.width / bars) / 4) * quarterIdx) - .75)"></div>
+                             }
 
-                        </div>
+                             @for(__ of barDivisionsArray; track __; let noteLine = $index) {
 
-                        <div class="bar-line" [style.left.px]="(((timelineRect.width / bars) * bar) - 1)"></div>
-                    }
+                                 <div class="note-line" [style.left.px]="((((timelineRect.width / bars) / barDivisions) * noteLine) - .5)"></div>
+                             }
 
-                    <div class="bar-line" [style.right.px]="-1" [style.left]="'unset'"></div>
+                         </div>
+
+                         <div class="bar-line" [style.left.px]="(((timelineRect.width / bars) * bar) - 1)"></div>
+                     }
+
+                     <div class="bar-line" [style.right.px]="-1" [style.left]="'unset'"></div>
 
                 </div>
 
@@ -173,6 +178,19 @@ export interface DragState {
 
         background-color: var(--c-y);
     }
+    .timeline .quarter-note-marker {
+
+        z-index: 1;
+        position: absolute;
+        left: -.75px;
+        top: 0px;
+        height: 100%;
+        width: 1.5px;
+        opacity: .35;
+
+        background-color: var(--c-y);
+    }
+
     .timeline .note-line {
 
         z-index: 1;
@@ -232,7 +250,7 @@ export interface DragState {
         '(document:pointerup)': 'resizeNoteEndHandler($event)',
     }
     })
-    export class TimelineComponent implements OnChanges {
+    export class TimelineComponent implements OnChanges, OnDestroy {
 
     /** Instance of the Sequencer */
     @Input('sequencer') sequencer: Sequencer
@@ -282,8 +300,11 @@ export interface DragState {
     barWidth: number = 0
     barPositionArray: number[] = []
     barArray: number[] = []
-    barDivisions: number = 16
+    barDivisions: number = 4
     barDivisionsArray: number[] = []
+    
+    /** Quarter note positions within each bar (4 per bar in 4/4) */
+    quarterNoteArray: number[] = [0, 1, 2, 3]
 
     /** Height of a single note */
     noteHeight: number = 100
@@ -297,8 +318,11 @@ export interface DragState {
     /** HTML Timline line x position */
     currentLinePos = 0
 
-    /** Observable of the Beat for timeline */
-    timelineObserver: Subscription
+    /** Position tracking interval (60 FPS) */
+    private positionUpdateInterval: any
+
+    /** Optional: subscription to beat events for snapping UI */
+    private beatSubscription: Subscription
 
     /** Reference to currently dragged note element for direct DOM updates */
     private draggedNoteElement: HTMLElement | null = null
@@ -354,30 +378,54 @@ export interface DragState {
 
         if(this.sequencer == undefined) return 
 
-        // Update position of timeline line
-        this.timelineObserver = BeatMachine.subscribeTimeLine((t) => {
+        // Initialize BeatMachine
+        BeatMachine.initialize()
 
-            const startTime = this.sequencer.startTime
-
-            if(!Number.isNaN(startTime)) {
-
-                Tone.Draw.schedule(() => {
-
-                    if(this.sequencer.isPlaying) {
-
-                        this.currentLinePos = ((((Tone.immediate() - startTime) % this.bars)) * (this.timelineRect.width / this.bars))
-                        this.cdr.markForCheck()
-                    }
-                        
-                    else this.currentLinePos = 0
-
-                }, t)
-            }
-        })
+        // Start polling transport position for smooth current-line animation
+        this.startPositionTracking()
 
         this.update()
 
         this.cdr.markForCheck()
+    }
+
+    /**
+     * Poll transport position 60x per second for smooth timeline animation
+     * This is more reliable than RxJS events
+     */
+    private startPositionTracking() {
+        this.positionUpdateInterval = setInterval(() => {
+            // Ensure timelineRect is always fresh
+            if(!this.timelineRect) {
+                this.timelineRect = this._timeline?.nativeElement.getBoundingClientRect()
+            }
+
+            if(!this.timelineRect) return
+
+            if(this.sequencer?.isPlaying) {
+                // Get current transport position in seconds (convert from Tone.Time)
+                const transportPos = Tone.getTransport().position
+                const transportTimeSeconds = typeof transportPos === 'number' ? transportPos : Tone.Time(transportPos).toSeconds()
+                
+                // Get bar duration in seconds
+                const barDurationSeconds = Tone.Time(this._bars + 'b').toSeconds()
+                
+                // Wrap position to loop within bar range (handles looping sequencers)
+                const wrappedTimeSeconds = transportTimeSeconds % barDurationSeconds
+                
+                // Convert seconds to pixels
+                const timelineWidthPixels = this.timelineRect.width
+                const pixelPos = (wrappedTimeSeconds / barDurationSeconds) * timelineWidthPixels
+
+                this.currentLinePos = Math.max(0, Math.min(pixelPos, timelineWidthPixels))
+            } else {
+                // Not playing - reset position
+                this.currentLinePos = 0
+            }
+            
+            // Minimal change detection
+            this.cdr.markForCheck()
+        }, 16) // ~60 FPS
     }
 
     getBarArray() {
@@ -416,9 +464,15 @@ export interface DragState {
 
     ngOnDestroy() {
 
-        this.timelineObserver.unsubscribe()
+        // Clean up position tracking interval
+        if(this.positionUpdateInterval) {
+            clearInterval(this.positionUpdateInterval)
+        }
 
-        Tone.getTransport().cancel()
+        // Clean up beat subscription if it exists
+        if(this.beatSubscription) {
+            this.beatSubscription.unsubscribe()
+        }
     }
 
     update() {

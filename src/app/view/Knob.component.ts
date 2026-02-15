@@ -228,6 +228,18 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
     /** Initial value */
     initValue: number
 
+    /** RequestAnimationFrame batching for drag updates */
+    private pendingValue: number | null = null
+    private pendingSource: 'drag' | 'input' | 'code' = 'code'
+    private rafId: number | null = null
+    private lastUpdateTime: number = 0
+    private updateThrottleMs: number = 16 // ~30fps for audio updates (every 2-3 frames)
+
+    /** Scroll RAF batching */
+    private pendingScrollValue: number | null = null
+    private scrollRafId: number | null = null
+    private lastScrollUpdateTime: number = 0
+
     /** Wrapper dom element */
     @ViewChild('dom', {read: ElementRef}) private _dom: ElementRef<HTMLElement>
     get dom() : HTMLElement {
@@ -531,7 +543,22 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
         // Calculate new value
         const newValue = this.dragInitValue + rawValueChange
 
-        this.setValueInternal(newValue, 'drag')
+        // Store pending update instead of applying immediately
+        this.pendingValue = newValue
+        this.pendingSource = 'drag'
+
+        // Schedule throttled update
+        if (this.rafId === null) {
+            this.rafId = requestAnimationFrame(() => {
+                const now = performance.now()
+                if (now - this.lastUpdateTime >= this.updateThrottleMs && this.pendingValue !== null) {
+                    this.setValueInternal(this.pendingValue, this.pendingSource)
+                    this.lastUpdateTime = now
+                    this.pendingValue = null
+                }
+                this.rafId = null
+            })
+        }
     }
 
     /** On 'mouseup' event callback */
@@ -603,8 +630,22 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
             const effectiveStep = this.isShiftDown ? this.step * 0.5 : this.step
             const valueChange = direction * steps * effectiveStep
 
-            this.setValueInternal(this.value + valueChange, 'input')
+            // Store pending scroll update
+            this.pendingScrollValue = this.value + valueChange
             this.scrollAccumulator = 0
+
+            // Schedule throttled scroll update
+            if (this.scrollRafId === null) {
+                this.scrollRafId = requestAnimationFrame(() => {
+                    const now = performance.now()
+                    if (now - this.lastScrollUpdateTime >= this.updateThrottleMs && this.pendingScrollValue !== null) {
+                        this.setValueInternal(this.pendingScrollValue, 'input')
+                        this.lastScrollUpdateTime = now
+                        this.pendingScrollValue = null
+                    }
+                    this.scrollRafId = null
+                })
+            }
         }
     }
 
@@ -624,6 +665,16 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
     }
 
     ngOnDestroy() {
+
+        // Cancel pending animation frames
+        if (this.rafId !== null) {
+            cancelAnimationFrame(this.rafId)
+            this.rafId = null
+        }
+        if (this.scrollRafId !== null) {
+            cancelAnimationFrame(this.scrollRafId)
+            this.scrollRafId = null
+        }
 
         document.removeEventListener('pointermove', this.onPointerMove.bind(this))
         document.removeEventListener('pointerup', this.onPointerUp.bind(this))

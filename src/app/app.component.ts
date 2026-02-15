@@ -271,7 +271,8 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
             
             Visual.visualsEnabled = true
 
-            Tone.getTransport().start(Tone.getContext().currentTime)
+            // Don't start transport here - let BeatMachine manage it
+            // Transport should only run when sequencers are playing
         }
         else {
 
@@ -279,7 +280,10 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
 
             Visual.visualsEnabled = false
 
-            Tone.getTransport().pause(Tone.getContext().currentTime)
+            // Pause transport when tab loses focus
+            if(Tone.getTransport().state === 'started') {
+                Tone.getTransport().pause(Tone.getContext().currentTime)
+            }
         }
 
         this.synthesizer = this.synthesizer

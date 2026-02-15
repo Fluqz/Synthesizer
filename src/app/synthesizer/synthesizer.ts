@@ -240,13 +240,14 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
         this.setVolume(this.default_volume)
     }
 
-    get bpm() { return Tone.getTransport().bpm.value }
+    get bpm() { return Math.round(Tone.getTransport().bpm.value * 10) / 10 }
     set bpm(bpm:number) { 
 
         if(bpm == null) bpm = 1
-        // TODO - WTF Decimals all the time
-        Tone.getTransport().bpm.value = bpm
-        console.log('bpm', Tone.getTransport().bpm.value)
+
+        // Round to one decimal place
+        const roundedBpm = Math.round(bpm * 10) / 10
+        Tone.getTransport().bpm.value = roundedBpm
     }
 
     /** Set Master Volume */

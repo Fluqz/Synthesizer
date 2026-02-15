@@ -76,7 +76,7 @@ styles: `
         height: 100%;
 
         background-color: var(--c-y);
-        color: var(--c-o);
+        color: var(--c-b);
 
         text-align: center;
         display: flex;
@@ -154,8 +154,6 @@ styles: `
         font-size: 8px;
         cursor: pointer;
         color: inherit;
-
-        transition: unset;
     }
 
     .note .btn:hover {
