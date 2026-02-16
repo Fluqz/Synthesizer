@@ -32,6 +32,9 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
 
     /** Starting time of the first sequencer */
     static startTime: number
+    
+    /** Flag to indicate if this is a bulk start (all sequencers at once) vs adding one sequencer to playing ones */
+    static bulkStarting: boolean = false
 
     /** Starting time of this sequencer */
     public startTime: number
@@ -52,6 +55,9 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
     _bars: number
 
     toneSequence: Tone.Part
+    
+    /** Temporary loop used to delay a subsequent sequencer start until the next bar */
+    private delayedStartLoop: Tone.Loop
 
     channels: Channel[]
 
@@ -78,7 +84,7 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         this.loop = true
 
         this.noteLength = '1/4'
-        this.bars = 4
+        this.bars = 2
     }
 
 
@@ -297,27 +303,64 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
             this.toneSequence.dispose()
         }
 
+        // Clean up any previous delayed start loop
+        if(this.delayedStartLoop) {
+            this.delayedStartLoop.dispose()
+            this.delayedStartLoop = null
+        }
+
         this.toneSequence = this.createToneSequence()
 
-        // Get current transport position
-        const transportPos = Tone.getTransport().position as number
-        
-        // Snap to nearest bar boundary for better sync between sequencers
-        const barDurationSeconds = Tone.Time('1b').toSeconds()
+        // Get current transport position in seconds
+        const transportPos = Tone.getTransport().position
         const transportSeconds = typeof transportPos === 'number' ? transportPos : Tone.Time(transportPos).toSeconds()
-        const snappedPos = Math.round(transportSeconds / barDurationSeconds) * barDurationSeconds
         
-        this.toneSequence.start(snappedPos, 0)
-
-        // Only set global startTime on first sequencer start
-        if(Sequencer.startTime == undefined) {
+        // Bar duration in seconds
+        const barDurationSeconds = Tone.Time('1b').toSeconds()
+        
+        // Determine start position
+        const isFirstSequencer = Sequencer.startTime == undefined
+        const isBulkStart = Sequencer.bulkStarting
+        
+        if(isFirstSequencer) {
+            // First sequencer: snap to nearest bar boundary and start immediately
+            const snappedPos = Math.round(transportSeconds / barDurationSeconds) * barDurationSeconds
+            this.toneSequence.start(snappedPos, 0)
+            
             Sequencer.startTime = snappedPos
+            this.startTime = snappedPos
+        } else if(isBulkStart) {
+            // Bulk start: all sequencers start together at the same position
+            // Don't use delayed start logic when starting multiple at once
+            this.toneSequence.start(Sequencer.startTime, 0)
+            this.startTime = Sequencer.startTime
+        } else {
+            // Subsequent sequencer added while others playing: delay until next bar
+            const nextBarPos = Math.ceil(transportSeconds / barDurationSeconds) * barDurationSeconds
+            
+            // Start the sequence at the SAME position as the first sequencer
+            // This ensures notes play at the same times globally
+            this.startTime = Sequencer.startTime
+            
+            // Use a one-shot loop to trigger the start at the next bar boundary
+            this.delayedStartLoop = new Tone.Loop((time) => {
+                // Start the toneSequence at the first sequencer's start position
+                // The transport will have caught up to handle the scheduling correctly
+                this.toneSequence.start(Sequencer.startTime, 0)
+                
+                // Dispose the loop after it fires once
+                if(this.delayedStartLoop) {
+                    this.delayedStartLoop.dispose()
+                    this.delayedStartLoop = null
+                }
+            }, barDurationSeconds)
+            
+            // Start this loop at the next bar
+            this.delayedStartLoop.start(nextBarPos)
         }
         
-        this.startTime = snappedPos
         this.isPlaying = true
-
-         return this.toneSequence
+        return this.toneSequence
     }
 
     stop() {
@@ -328,6 +371,12 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
             this.toneSequence.clear()
             this.toneSequence.stop(Tone.getContext().currentTime)
             this.toneSequence.dispose()
+        }
+
+        // Clean up delayed start loop if it exists
+        if(this.delayedStartLoop) {
+            this.delayedStartLoop.dispose()
+            this.delayedStartLoop = null
         }
 
         for(let channel of this.channels) this.synthesizer.triggerRelease(this.lastNote, Tone.getContext().currentTime, channel)
@@ -342,9 +391,13 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
 
         this.isPlaying = false
 
-        if(this.synthesizer.getActiveSequencers().length == 0) Sequencer.startTime = null
-
-        // console.log('stop', Sequencer.startTime, this.synthesizer.getActiveSequencers().length)
+        // If no more sequencers are playing, reset transport and stop it
+        if(this.synthesizer.getActiveSequencers().length == 0) {
+            Sequencer.startTime = null
+            Tone.getTransport().stop()
+            Tone.getTransport().position = 0
+            BeatMachine.stop()
+        }
     }
 
     destroy() {

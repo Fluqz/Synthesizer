@@ -28,7 +28,7 @@ import { CommonModule } from "@angular/common";
 
     <div *ngIf="track != undefined" class="track-wrapper" (click)="onClick($event)">
 
-        <div class="node track-options" [style]="'background-color:' + color" [class.playing]="false" > <!-- todo - not reactive -->
+        <div class="node track-options" [class.playing]="false" > <!-- todo - not reactive -->
 
             <!-- { track.number } -->
             <!-- { track.id } -->
@@ -64,7 +64,8 @@ import { CommonModule } from "@angular/common";
                 <div 
                     (click)="onChannel($event)"
                     class="btn"
-                    title="Channel">{{track.channel}}</div>
+                    title="Channel"
+                    [style]="'background-color:' + color">{{track.channel}}</div>
 
                 <!-- Mute -->
                 <div 
@@ -165,6 +166,7 @@ import { CommonModule } from "@angular/common";
         min-width: 250px;
         height: inherit;
 
+        padding-right: 10px;
         display: inline-flex;
         align-items: center;
 

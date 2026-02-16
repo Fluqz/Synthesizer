@@ -1,7 +1,5 @@
-import { Synthesizer } from "./../synthesizer/synthesizer"
+import { Synthesizer } from "../synthesizer/synthesizer"
 import { G } from "../globals";
-import { Grid } from "../util/grid";
-import { M } from "../util/math/math";
 import { Visual } from "./visual";
 
 import * as Tone from "tone";
@@ -30,8 +28,16 @@ export const flowField = (p5) => {
   let showField = false;
 
   let cFactor = 255;
+  
+  // Cache colors
+  let modulatorColor;
+  let blackColor;
+  let whiteColor;
+  let redColor;
+  let greenColor;
 
   let clear = false;
+  let colorCache = {};
 
   p5.setup = () => {
     p5.createCanvas(G.w, G.h);
@@ -55,6 +61,17 @@ export const flowField = (p5) => {
 
     flowfield = new Array(rows * cols);
     flowcolorfield = new Array(rows * cols);
+    
+    // Pre-cache colors
+    modulatorColor = p5.color(
+      flowFieldOptions.modulatorColor.r,
+      flowFieldOptions.modulatorColor.g,
+      flowFieldOptions.modulatorColor.b
+    );
+    blackColor = p5.color(0, 0, 0);
+    whiteColor = p5.color(255);
+    redColor = p5.color("red");
+    greenColor = p5.color("green");
 
     // Tone.getTransport().scheduleRepeat(() => {
 
@@ -115,61 +132,31 @@ export const flowField = (p5) => {
     };
 
     this.follow = function (vectors, colorfield) {
-      let x = p5.floor(this.pos.x / scl);
-      let y = p5.floor(this.pos.y / scl);
-      let index = x + y * cols;
-      let force = vectors[index];
-      this.applyForce(force);
-      let c = colorfield[index];
+       let x = p5.floor(this.pos.x / scl);
+       let y = p5.floor(this.pos.y / scl);
+       let index = x + y * cols;
+       let force = vectors[index];
+       this.applyForce(force);
+       let c = colorfield[index];
 
-      if (c) {
-
-        // Patterns
-        if (index % flowFieldOptions.modulator == 0) {
-
-          p5.stroke(
-            p5.color(
-              flowFieldOptions.modulatorColor.r,
-              flowFieldOptions.modulatorColor.g,
-              flowFieldOptions.modulatorColor.b
-            )
-          ) 
-
-          // p5.stroke(p5.color(0, 0, 0));
-        }
-        // p5.stroke(p5.color(c[0], c[1], c[2]))
-        else if (x % flowFieldOptions.modulator != 0 && y % flowFieldOptions.modulator != 0) {
-
-          // p5.stroke(p5.color(0, 0, 0));
-
-          p5.stroke(p5.color(c[0], c[1], c[2]));
-        }
-        // else if((x + y) % flowFieldOptions.modulator == 0)
-        //   p5.stroke(p5.color(255))
-        else {
-         
-          // p5.stroke(p5.color(c[0], c[1], c[2]));
-
-
-          p5.stroke(p5.color(0, 0, 0));
-
-          // p5.stroke(
-          //   p5.color(
-          //     flowFieldOptions.modulatorColor.r,
-          //     flowFieldOptions.modulatorColor.g,
-          //     flowFieldOptions.modulatorColor.b
-          //   )
-          // ) 
-        }
-        // else p5.stroke(p5.color(
-        //   0,
-        //   0,
-        //   0,
-        // ))
-
-        // p5.stroke(p5.color(c[0], c[1], c[2]))
-      }
-    };
+       if (c) {
+         // Patterns
+         if (index % flowFieldOptions.modulator == 0) {
+           p5.stroke(modulatorColor);
+         }
+         else if (x % flowFieldOptions.modulator != 0 && y % flowFieldOptions.modulator != 0) {
+           // Cache color to avoid recreating
+           let colorKey = c[0] + ',' + c[1] + ',' + c[2];
+           if (!colorCache[colorKey]) {
+             colorCache[colorKey] = p5.color(c[0], c[1], c[2]);
+           }
+           p5.stroke(colorCache[colorKey]);
+         }
+         else {
+           p5.stroke(blackColor);
+         }
+       }
+     };
   }
 
   p5.draw = () => {
@@ -180,12 +167,9 @@ export const flowField = (p5) => {
     //   p5.clear()
     // }
 
-    if (p5.frameCount % 1 == 0) {
-
-      scl = (scl + 0.2) % 15
-
-      if (scl < 10) scl = 10
-    }
+    // Simplify scl calculation
+    scl = (scl + 0.2) % 15;
+    if (scl < 10) scl = 10;
 
     // if(p5.frameCount % 1 == 0) {
 
@@ -235,14 +219,16 @@ export const flowField = (p5) => {
 
       for (let x = 0; x < cols; x++) {
 
-        let index = x + y * cols
-        let r = p5.noise(xoff, yoff, zoff) * cFactor
-        let g = p5.noise(xoff + 100, yoff + 100, zoff) * cFactor
-        let b = p5.noise(xoff + 200, yoff + 200, zoff) * cFactor
-        let angle = p5.noise(xoff, yoff, zoff) * p5.TWO_PI
-        let v = p5.constructor.Vector.fromAngle(angle) // vector from angle
-        let m = p5.map(p5.noise(xoff, yoff, magOff), 0, 1, -5, 5)
-        v.setMag(m)
+         let index = x + y * cols
+         // Reuse noise value to reduce calls
+         let noiseVal = p5.noise(xoff, yoff, zoff);
+         let r = noiseVal * cFactor
+         let g = p5.noise(xoff + 100, yoff + 100, zoff) * cFactor
+         let b = p5.noise(xoff + 200, yoff + 200, zoff) * cFactor
+         let angle = noiseVal * p5.TWO_PI
+         let v = p5.constructor.Vector.fromAngle(angle) // vector from angle
+         let m = p5.map(p5.noise(xoff, yoff, magOff), 0, 1, -5, 5)
+         v.setMag(m)
 
         // magOff++
         // magOff = magOff % 2
@@ -294,9 +280,7 @@ export const flowField = (p5) => {
         }
       } else if (particles.length > 2000) {
         let rnd = p5.floor(p5.random(10));
-        for (let i = 0; i < rnd; i++) {
-          particles.shift();
-        }
+        particles.splice(0, rnd);
       }
     }
   }

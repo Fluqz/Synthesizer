@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from "@angular/core"
+import { G } from "../globals"
+import { Synthesizer } from "../synthesizer/synthesizer"
+import { PresetManager } from "../core/preset-manager"
 
 
 
@@ -13,17 +16,30 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
         <div class="h-1">Settings</div>
 
-        Disable visuals
+        <div class="option"> 
+            <div class="h-4">Enable background color animations</div>
+            <div class="btn text-1" (click)="toggleAnimationEnabled()">{{ animationEnabled ? 'ON' : 'OFF' }}</div>
+        </div>
 
-        Disable animations
+        <div class="option"> 
+            <div class="h-4">Disable visuals</div>
+            <div class="btn text-1" (click)="toggleVisualsEnabled()">{{ visualsEnabled ? 'ON' : 'OFF' }}</div>
+        </div>
 
-        Disable changing colors
+        <div class="option"> 
+            <div class="h-4">Mute when leaving the browser window</div>
+            <div class="btn text-1" (click)="toggleMuteOnLeavingWindow()">{{ muteOnLeavingWindow ? 'ON' : 'OFF' }}</div>
+        </div>
 
-        Mute on leaving browser window
+        <div class="option"> 
+            <div class="h-4">Delete all presets</div>
+            <div class="btn text-1" (click)="deletePresets()">Delete</div>
+        </div>
 
-        Delete all presets
-
-        Show keyboard
+        <div class="option"> 
+            <div class="h-4">Show keyboard</div>
+            <div class="btn text-1" (click)="toggleShowKeyboard()">{{ showKeyboard ? 'ON' : 'OFF' }}</div>
+        </div>
 
     </div>
 
@@ -39,13 +55,14 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
         left: 10%;
 
         padding: 20px;
-
-        overflow: scroll;
+        padding-right: 10%;
 
         width: 90%;
         height: 0px;
 
         font-size: 1.4rem;
+
+        overflow: scroll;
 
         background-color: transparent;
 
@@ -57,24 +74,19 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
     .settings-wrapper.active {
 
-        /* min-height: 100vh; */
-        /* height: auto; */
         height: 100vh;
     }
 
     .settings-wrapper .btn {
 
-        position: relative;
-
-        z-index: 10;
+        padding: 0px 5px;
     }
 
-
-    /** :global */
-    :host canvas.active {
+    :global(canvas.active) {
 
         opacity: 0;
     }
+
 
     .settings-wrapper .h-1,
     .settings-wrapper .h-2,
@@ -112,12 +124,62 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
     .settings-wrapper .text-1 {
         
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
-    
+
+    .settings-wrapper .text-1 span {
+
+        font-size: 1.1rem;
+        color: var(--c-y);
+    }
+
+    :host .option {
+
+        display:flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
     `,
 })
 export class SettingsComponent {
 
     @Input('active') active:boolean = true
+
+
+    get animationEnabled() { return G.animationEnabled }
+
+    toggleAnimationEnabled() {
+
+        G.animationEnabled = !G.animationEnabled
+    }
+
+
+    get visualsEnabled() { return G.visualsEnabled }
+
+    toggleVisualsEnabled() {
+
+        G.visualsEnabled = !G.visualsEnabled
+    }
+
+
+    get muteOnLeavingWindow() { return G.muteOnLeavingWindow }
+
+    toggleMuteOnLeavingWindow() {
+
+        G.muteOnLeavingWindow = !G.muteOnLeavingWindow
+    }
+
+
+    deletePresets() {
+
+    }
+
+
+    get showKeyboard() { return G.showKeyboard }
+
+    toggleShowKeyboard() {
+
+        G.showKeyboard = !G.showKeyboard
+    }
 }

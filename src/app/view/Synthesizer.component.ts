@@ -75,20 +75,20 @@ import { Key } from '../synthesizer/key'
                     <!-- <label for="savePreset">Save Preset</label> -->
                     <input id="save-preset" type="text" placeholder="Save Preset" name="savePreset" [(ngModel)]="presetInputValue" (keydown)="onPresetInput($event)"/>
                 </div>
-                
-                    <div *ngIf="presets.length > 0" id="load-preset">
+            
+                <div *ngIf="presets.length > 0" id="load-preset">
 
-                        <!-- <label for="loadPreset">Load</label> -->
-                        
-                        <!-- Presets -->
-                        <sy-dropdown
-                            [value]="''"
-                            [options]="presets"
-                            [deletableOptions]="true"
-                            (onSelect)="onChangePresets($event)" 
-                            (onDeleteOption)="onDeletePresetOption($event)"
-                            />
-                    </div>
+                    <!-- <label for="loadPreset">Load</label> -->
+                    
+                    <!-- Presets -->
+                    <sy-dropdown
+                        [value]="''"
+                        [options]="presets"
+                        [deletableOptions]="true"
+                        (onSelect)="onChangePresets($event)" 
+                        (onDeleteOption)="onDeletePresetOption($event)"
+                        />
+                </div>
 
             </div>
 
@@ -348,22 +348,26 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         return t
     }
 
-    deleteTrack(e) {
+    deleteTrack(track: Track) {
 
-        console.log('s delete track', e.detail.id)
+        console.log('s delete track', track.id)
 
-        this.synthesizer.removeTrack(e.detail)
+        this.synthesizer.removeTrack(track)
 
         this.saveUndo()
     }
 
-    duplicateTrack(e) {
-
-        if(!e.detail) return
+    duplicateTrack(track: Track) {
 
         let duplicate = this.addTrack()
 
-        duplicate.serializeIn(e.detail.serializeOut())
+        track.releaseNotes()
+
+        duplicate.serializeIn(track.serializeOut())
+
+        duplicate.index = this.components[this.components.length - 1].index
+
+        duplicate.releaseNotes()
 
         this.saveUndo()
     }
@@ -380,20 +384,18 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         return s
     }
     
-    deleteSequencer(e) {
+    deleteSequencer(sequencer: Sequencer) {
 
-        this.synthesizer.removeSequencer(e.detail)
+        this.synthesizer.removeSequencer(sequencer)
 
         this.saveUndo()
     }
     
-    duplicateSequencer(e) {
-
-        if(!e.detail) return
+    duplicateSequencer(sequencer: Sequencer) {
 
         let duplicate = this.addSequencer()
 
-        duplicate.serializeIn(e.detail.serializeOut())
+        duplicate.serializeIn(sequencer.serializeOut())
 
         this.scrollToBottom()
 
@@ -418,11 +420,14 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         BeatMachine.start()
 
         _Sequencer.startTime = undefined
+        _Sequencer.bulkStarting = true
 
         // Start all sequencers immediately (no delay)
         for(let seq of this.synthesizer.sequencers) {
             seq.start()
         }
+
+        _Sequencer.bulkStarting = false
 
         this.synthesizer = this.synthesizer
         this.synthesizer.sequencers = this.synthesizer.sequencers

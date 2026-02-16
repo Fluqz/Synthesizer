@@ -63,28 +63,36 @@ export interface DragState {
 
                     <div *ngIf="sequencer.isPlaying == true" class="current-line" [style.transform]="'translateX(' + currentLinePos + 'px)'"></div>
 
-                    @for(_ of barArray; track _; let bar = $index) {
-
-                         <div class="bar" 
-                                 [style.width.px]="barWidth"
-                                 [style.left.px]="barPositionArray[bar]">
-
-                             @for(q of quarterNoteArray; track q; let quarterIdx = $index) {
-
-                                 <div class="quarter-note-marker" [style.left.px]="((((timelineRect.width / bars) / 4) * quarterIdx) - .75)"></div>
-                             }
-
-                             @for(__ of barDivisionsArray; track __; let noteLine = $index) {
-
-                                 <div class="note-line" [style.left.px]="((((timelineRect.width / bars) / barDivisions) * noteLine) - .5)"></div>
-                             }
-
-                         </div>
-
-                         <div class="bar-line" [style.left.px]="(((timelineRect.width / bars) * bar) - 1)"></div>
-                     }
-
-                     <div class="bar-line" [style.right.px]="-1" [style.left]="'unset'"></div>
+                    <!-- Grid lines with adaptive detail level based on pixel density -->
+                    @for(bar of barArray; track bar) {
+                        <!-- 16th notes (hidden if too crowded) -->
+                        @if(show16ths) {
+                            @for(sixteenth of sixteenthArray; track sixteenth) {
+                                <div class="grid-line grid-16th" 
+                                     [style.left.px]="(barPositionArray[bar] + (sixteenth * barWidth / 16))"></div>
+                            }
+                        }
+                        
+                        <!-- 8th notes (hidden if too crowded) -->
+                        @if(show8ths) {
+                            @for(eighth of eighthArray; track eighth) {
+                                <div class="grid-line grid-8th" 
+                                     [style.left.px]="(barPositionArray[bar] + (eighth * barWidth / 8))"></div>
+                            }
+                        }
+                        
+                        <!-- Quarter notes (always visible) -->
+                        @for(quarter of quarterNoteArray; track quarter) {
+                            <div class="grid-line grid-quarter" 
+                                 [style.left.px]="(barPositionArray[bar] + (quarter * barWidth / 4))"></div>
+                        }
+                        
+                        <!-- Bar boundary line -->
+                        <div class="grid-line grid-bar" [style.left.px]="barPositionArray[bar]"></div>
+                    }
+                    
+                    <!-- Final bar line -->
+                    <div class="grid-line grid-bar" [style.right.px]="-1" [style.left]="'unset'"></div>
 
                 </div>
 
@@ -152,61 +160,42 @@ export interface DragState {
     }
 
 
-    .timeline .bar {
-
-        position: absolute;
-        left: 0px;
-        top: 0px;
-
-        max-width: 2000px;
-        min-width: 40px;
-        height: 100%;
-
-        text-align: center;
-    /* 
-        background-color: var(--c-w);
-        opacity: .01; */
-    }
-    .timeline .bar-line {
-
+    /* Grid line hierarchy */
+    .timeline .grid-line {
         z-index: 1;
         position: absolute;
-        left: -.5px;
         top: 0px;
         height: 100%;
+        background-color: var(--c-y);
+    }
+
+    /* 16th notes - thinnest, most subtle */
+    .timeline .grid-16th {
+        width: 0.5px;
+        opacity: 0.08;
+    }
+
+    /* 8th notes - medium */
+    .timeline .grid-8th {
+        width: 0.75px;
+        opacity: 0.25;
+    }
+
+    /* Quarter notes - prominent */
+    .timeline .grid-quarter {
         width: 1px;
-
-        background-color: var(--c-y);
-    }
-    .timeline .quarter-note-marker {
-
-        z-index: 1;
-        position: absolute;
-        left: -.75px;
-        top: 0px;
-        height: 100%;
-        width: 1.5px;
-        opacity: .35;
-
-        background-color: var(--c-y);
+        opacity: 0.5;
     }
 
-    .timeline .note-line {
-
-        z-index: 1;
-        position: absolute;
-        left: -.5px;
-        top: 0px;
-        height: 100%;
-        width: 1px;
-        opacity: .3;
-
-        background-color: var(--c-y);
+    /* Bar boundaries - thickest, most visible */
+    .timeline .grid-bar {
+        width: 2px;
+        opacity: 1;
     }
 
     .timeline .current-line {
 
-        z-index: 1;
+        z-index: 1000;
         position: absolute;
         left: 1px;
         top: 0px;
@@ -300,11 +289,21 @@ export interface DragState {
     barWidth: number = 0
     barPositionArray: number[] = []
     barArray: number[] = []
-    barDivisions: number = 4
-    barDivisionsArray: number[] = []
     
-    /** Quarter note positions within each bar (4 per bar in 4/4) */
+    /** Quarter notes per bar (4/4 time) */
     quarterNoteArray: number[] = [0, 1, 2, 3]
+    
+    /** Eighth notes per bar (8 total) */
+    eighthArray: number[] = [0, 1, 2, 3, 4, 5, 6, 7]
+    
+    /** 16th notes per bar (16 total) */
+    sixteenthArray: number[] = Array.from({ length: 16 }, (_, i) => i)
+    
+    /** Whether to show 8th notes (adaptive based on pixel density) */
+    show8ths: boolean = true
+    
+    /** Whether to show 16th notes (adaptive based on pixel density) */
+    show16ths: boolean = true
 
     /** Height of a single note */
     noteHeight: number = 100
@@ -391,9 +390,13 @@ export interface DragState {
 
     /**
      * Poll transport position 60x per second for smooth timeline animation
-     * This is more reliable than RxJS events
+     * Apply negative latency offset to sync visual with audio playback
      */
     private startPositionTracking() {
+        // Latency compensation in seconds - Tone.js schedules audio slightly ahead of transport position
+        const AUDIO_LATENCY_MS = 50
+        const AUDIO_LATENCY_SECONDS = AUDIO_LATENCY_MS / 1000
+        
         this.positionUpdateInterval = setInterval(() => {
             // Ensure timelineRect is always fresh
             if(!this.timelineRect) {
@@ -407,11 +410,14 @@ export interface DragState {
                 const transportPos = Tone.getTransport().position
                 const transportTimeSeconds = typeof transportPos === 'number' ? transportPos : Tone.Time(transportPos).toSeconds()
                 
+                // Apply latency compensation (subtract to delay visual slightly)
+                const compensatedTimeSeconds = transportTimeSeconds - AUDIO_LATENCY_SECONDS
+                
                 // Get bar duration in seconds
                 const barDurationSeconds = Tone.Time(this._bars + 'b').toSeconds()
                 
                 // Wrap position to loop within bar range (handles looping sequencers)
-                const wrappedTimeSeconds = transportTimeSeconds % barDurationSeconds
+                const wrappedTimeSeconds = compensatedTimeSeconds % barDurationSeconds
                 
                 // Convert seconds to pixels
                 const timelineWidthPixels = this.timelineRect.width
@@ -437,14 +443,7 @@ export interface DragState {
         return this.barArray
     }
 
-    getBarDivisionsArray() {
 
-        this.barDivisionsArray.length = 0
-
-        for(let i = 0; i < this.barDivisions; i++) this.barDivisionsArray.push(i)
-
-        return this.barDivisionsArray
-    }
 
     getBarPositionArray() {
 
@@ -487,8 +486,8 @@ export interface DragState {
 
             this.barWidth = this.getBarWidth()
             this.barArray = this.getBarArray()
-            this.barDivisionsArray = this.getBarDivisionsArray()
             this.barPositionArray = this.getBarPositionArray()
+            this.updateGridVisibility()
         }
     }
 
@@ -576,6 +575,25 @@ export interface DragState {
 
     getBarWidth() {
         return (this.timelineRect.width / this.bars)
+    }
+
+    /**
+     * Determine which grid lines to show based on pixel density
+     * Prevents crowding when zoomed out
+     */
+    updateGridVisibility() {
+        const MIN_PIXEL_SPACING = 8  // Minimum pixels between grid lines
+        
+        // Calculate pixel width per subdivision
+        const pixelsPerQuarter = this.barWidth / 4
+        const pixelsPerEighth = this.barWidth / 8
+        const pixelsPerSixteenth = this.barWidth / 16
+        
+        // Show 8th notes if they're spaced at least MIN_PIXEL_SPACING pixels apart
+        this.show8ths = pixelsPerEighth >= MIN_PIXEL_SPACING
+        
+        // Show 16th notes if they're spaced at least MIN_PIXEL_SPACING pixels apart
+        this.show16ths = pixelsPerSixteenth >= MIN_PIXEL_SPACING
     }
 
     getBarLeftPosition(bar: number) {

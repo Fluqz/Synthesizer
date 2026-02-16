@@ -23,6 +23,17 @@ export class G {
 
     static PATH = window.location.origin + window.location.pathname
 
+
+    static animationEnabled: boolean = true
+
+    static visualsEnabled: boolean = true
+
+    static muteOnLeavingWindow: boolean = true
+
+    static showKeyboard: boolean = true
+
+    static version: string = ''
+
     static init() {
 
         G.w = innerWidth

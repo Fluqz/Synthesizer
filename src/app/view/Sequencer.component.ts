@@ -41,13 +41,19 @@ export const convertNoteLength = (n: NoteLength) => {
 
         <div class="sequencer-menu">
 
-            <div class="btn delete" (click)="onDelete()">&#x2715;</div>
-            
-            <div class="btn duplicate" (click)="onDuplicateHandler($event)">D</div>
+            <div class="btn-cont">
 
-            <div class="btn play" [class.active]="sequencer.isPlaying" title="Play" (click)="toggleStartStop()">{{ !sequencer.isPlaying ? 'Play' : 'Stop'}}</div>
+                <div class="btn delete" title="Delete sequencer" (click)="onDelete()">&#x2715;</div>
+                
+                <div class="btn duplicate" title="Duplicate sequencer" (click)="onDuplicateHandler($event)">D</div>
 
-            <div class="btn noteLength" (click)="onNoteLength($event)">{{sequencer.noteLength}}</div>
+                <div class="toggle-sequencers btn" title="Toggle Play/Pause" title="Play / Stop Sequencer" (click)="toggleStartStop()">{{ sequencer.isPlaying ? '⏸' : '▶' }}</div>
+
+                <div class="btn noteLength" title="Choose note length" (click)="onNoteLength($event)">{{sequencer.noteLength}}</div>
+                <div class="btn bars deactivated" title="Amount of bars">{{sequencer.bars}}</div>
+
+            </div>
+
 
             <div class="channels-container">
 
@@ -67,7 +73,7 @@ export const convertNoteLength = (n: NoteLength) => {
                 <div class="active-channels">
                     @for(channelNum of sequencer.channels; track channelNum; let i = $index) {
                         <div 
-                            class="channel-badge"
+                            class="btn"
                             [style.background-color]="getChannelColor(channelNum)"
                             [title]="'Channel ' + channelNum + ' - Click to toggle, Double-click to remove'"
                             (click)="toggleChannel(channelNum)"
@@ -106,11 +112,9 @@ export const convertNoteLength = (n: NoteLength) => {
 
     .sequencer-wrapper {
 
-        display: inline-flex;
-        align-items: center;
+        display: flex;
+        align-items: stretch;
 
-        /* height: 75px; */
-        min-width: 400px;
         width: 100%;
         height: auto;
 
@@ -119,14 +123,18 @@ export const convertNoteLength = (n: NoteLength) => {
 
     .sequencer-menu {
 
-        width: 250px;
-
-        display: inline-block;
+        padding: 0px 10px;
+        width: fit-content;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        background-color: var(--c-y)
     }
 
     .sequencer-wrapper .sequence {
 
-        width: calc(100% - 250px);
+        width: calc(100%);
         height: 100%;
     }
 
@@ -137,10 +145,10 @@ export const convertNoteLength = (n: NoteLength) => {
         width: 100%;
         height: 100%;
 
-        display: inline-flex;
+        display: flex;
 
         justify-content: center;
-        align-items: center;
+        align-items: stretch;
     }
 
     .sequencer-wrapper .sequence .add-remove-cont {
@@ -171,13 +179,21 @@ export const convertNoteLength = (n: NoteLength) => {
         color: var(--c-y);
     }
 
+    .btns-cont {
+
+        display:flex;
+
+    }
+
+    .btns-cont .btn .deactivated {
+
+        color: var(--c-b);
+    }
+
     /* Channel management UI */
     .channels-container {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 8px;
-        background-color: var(--c-b);
     }
 
     .channel-input-group {
@@ -186,22 +202,15 @@ export const convertNoteLength = (n: NoteLength) => {
     }
 
     .channel-input {
-        width: 50px;
-        height: 40px;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background-color: var(--c-b);
-        color: var(--c-w);
-        font-weight: bold;
+        width: 25px;
+        height: 25px;
         text-align: center;
-        font-size: 16px;
         cursor: text;
     }
 
     .channel-input:focus {
         outline: none;
         border-color: var(--c-y);
-        box-shadow: 0 0 4px var(--c-y);
     }
 
     .channel-input::placeholder {
@@ -216,28 +225,9 @@ export const convertNoteLength = (n: NoteLength) => {
         flex: 1;
     }
 
-    .channel-badge {
-        min-width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        color: var(--c-b);
-        font-weight: bold;
-        font-size: 14px;
-        cursor: pointer;
-        user-select: none;
-    }
+    .active-channels .btn {
 
-    .channel-badge:hover {
-        transform: scale(1.1);
-        border-color: rgba(255, 255, 255, 0.7);
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-    }
 
-    .channel-badge:active {
-        transform: scale(0.95);
     }
 
 `,
