@@ -141,7 +141,11 @@ import { CommonModule } from '@angular/common';
 export class MenuComponent {
 
     @Input('isActive') isActive:boolean = false
+    
     @Output('onClose') onClose:EventEmitter<null> = new EventEmitter()
+    @Output('onDeletePreset') public onDeletePreset: EventEmitter<null> = new EventEmitter()
+    @Output('onToggleVisuals') public onToggleVisuals: EventEmitter<boolean> = new EventEmitter()
+
 
     navigation: MenuNavigation = 'MANUAL'
 

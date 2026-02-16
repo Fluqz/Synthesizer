@@ -40,7 +40,7 @@ export class PresetManager {
               name: 'default',
               channel: 0,
               bpm: 120,
-              ...DEFAULT_SESSION.currentSession
+              ...DEFAULT_SESSION.synthesizer.currentSession
           }
 
           // Load default presets on initialization

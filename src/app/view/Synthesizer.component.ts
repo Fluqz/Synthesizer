@@ -143,7 +143,7 @@ import { Key } from '../synthesizer/key'
         
         <div *ngIf="synthesizer.tracks.length > 0" class="keys">
 
-            <div *ngIf="keyboardVisible">
+            <div *ngIf="showKeyboard">
 
                 @for(key of keys; track key) {
 
@@ -283,7 +283,6 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     presets: string[] = []
 
-    keyboardVisible = true
     isRecording = false
 
     sequencersCollapsed: boolean = false
@@ -300,6 +299,7 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
         return this.synthesizer?.sequencers.some(seq => seq.isPlaying) ?? false
     }
 
+    get showKeyboard() { return G.showKeyboard }
 
     constructor(private cdr: ChangeDetectorRef) {
 

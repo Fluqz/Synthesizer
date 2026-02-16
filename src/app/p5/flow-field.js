@@ -160,6 +160,9 @@ export const flowField = (p5) => {
   }
 
   p5.draw = () => {
+    
+    console.log('draw',!G.animationEnabled)
+    if(!G.visualsEnabled) return
 
     // if(p5.frameCount % 50 == 0) {
 

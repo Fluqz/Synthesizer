@@ -17,7 +17,7 @@ import { PresetManager } from "../core/preset-manager"
         <div class="h-1">Settings</div>
 
         <div class="option"> 
-            <div class="h-4">Enable background color animations</div>
+            <div class="h-4">Enable animations</div>
             <div class="btn text-1" (click)="toggleAnimationEnabled()">{{ animationEnabled ? 'ON' : 'OFF' }}</div>
         </div>
 
@@ -27,8 +27,8 @@ import { PresetManager } from "../core/preset-manager"
         </div>
 
         <div class="option"> 
-            <div class="h-4">Mute when leaving the browser window</div>
-            <div class="btn text-1" (click)="toggleMuteOnLeavingWindow()">{{ muteOnLeavingWindow ? 'ON' : 'OFF' }}</div>
+            <div class="h-4">Pause on leaving the browser window</div>
+            <div class="btn text-1" (click)="togglePauseOnLeaveWindow()">{{ pauseOnLeaveWindow ? 'ON' : 'OFF' }}</div>
         </div>
 
         <div class="option"> 
@@ -146,6 +146,8 @@ export class SettingsComponent {
 
     @Input('active') active:boolean = true
 
+    @Output('onDeletePreset') public onDeletePreset: EventEmitter<null> = new EventEmitter()
+    @Output('onToggleVisuals') public onToggleVisuals: EventEmitter<boolean> = new EventEmitter()
 
     get animationEnabled() { return G.animationEnabled }
 
@@ -160,19 +162,22 @@ export class SettingsComponent {
     toggleVisualsEnabled() {
 
         G.visualsEnabled = !G.visualsEnabled
+
+        this.onToggleVisuals.next(G.visualsEnabled)
     }
 
 
-    get muteOnLeavingWindow() { return G.muteOnLeavingWindow }
+    get pauseOnLeaveWindow() { return G.pauseOnLeaveWindow }
 
-    toggleMuteOnLeavingWindow() {
+    togglePauseOnLeaveWindow() {
 
-        G.muteOnLeavingWindow = !G.muteOnLeavingWindow
+        G.pauseOnLeaveWindow = !G.pauseOnLeaveWindow
     }
 
 
     deletePresets() {
 
+        this.onDeletePreset.next(null)
     }
 
 

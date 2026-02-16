@@ -3,6 +3,7 @@ import { M } from "../util/math"
 import { Vec2 } from "../util/math";
 import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, OnInit, OnChanges, AfterViewInit, OnDestroy, SimpleChanges, ChangeDetectionStrategy } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { G } from "../globals";
 
 
 
@@ -27,7 +28,8 @@ import { CommonModule } from "@angular/common";
                     (change)="onInputChange($event)" />
         </div>
 
-        <div class="knob shifting-GIF" 
+        <div class="knob shifting-GIF"
+            [class.shifting-GIF]="animationEnabled"
             #knobDOM
             (pointerdown)="onPointerDown($event)"
             (touchstart)="onTouchStart($event)"
@@ -334,6 +336,8 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
         document.addEventListener('keyup', this.onKeyUp.bind(this))
 
     }
+
+    get animationEnabled() { return G.animationEnabled }
 
     ngOnInit() {
         // Validate inputs

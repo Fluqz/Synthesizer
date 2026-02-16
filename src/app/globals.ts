@@ -28,7 +28,7 @@ export class G {
 
     static visualsEnabled: boolean = true
 
-    static muteOnLeavingWindow: boolean = true
+    static pauseOnLeaveWindow: boolean = true
 
     static showKeyboard: boolean = true
 

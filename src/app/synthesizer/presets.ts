@@ -1,11 +1,17 @@
 // @ts-nocheck
 
 import type { IPreset } from "../core/preset-manager"
+import type { IAppSerialization } from "../app.component"
 
-
-export const DEFAULT_SESSION = {
-  "presets": [],
-  "currentSession": {
+export const DEFAULT_SESSION: IAppSerialization = {
+  version: '0.0.0',
+  animationEnabled: true,
+  visualsEnabled: true,
+  pauseOnLeaveWindow: true,
+  showKeyboard: true,
+  synthesizer: {
+    userPresets: [],
+    currentSession: {
         "bpm": 120,
         "volume": -10,
         "octave": 2,
@@ -584,10 +590,9 @@ export const DEFAULT_SESSION = {
                 "bars": 1,
                 "noteLength": "1/16"
             }
-        ],
-        "id": 1000,
-        "name": "Dirty Bass Song"
+        ]
     }
+  }
 }
 
 // {
@@ -1609,6 +1614,6 @@ export const DEFAULT_PRESETS: IPreset[] =
       ],
       "id": 0,
       "name": "singing birds"
-    },   
+    }
   ]
 

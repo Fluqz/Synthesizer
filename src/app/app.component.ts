@@ -1,9 +1,9 @@
-import { AfterContentInit, AfterViewInit, Component, HostListener, NgZone, OnDestroy } from '@angular/core';
+import { AfterContentInit, AfterViewInit, ChangeDetectionStrategy, Component, HostListener, NgZone, OnDestroy } from '@angular/core';
 
 import * as Tone from 'tone'
-import { WebMidi, type NoteMessageEvent } from "webmidi";
+import { type NoteMessageEvent } from "webmidi";
 
-import { Synthesizer, type ISynthesizerSerialization } from './synthesizer/synthesizer'
+import { ISerialization, Synthesizer, type ISynthesizerSerialization } from './synthesizer/synthesizer'
 import { Storage } from './core/storage'
 import { G } from './globals'
 
@@ -14,24 +14,34 @@ import { Midi } from './core/midi';
 import { isSafari } from './util/browser';
 
 import { COLORS } from './core/colors';
-import { DB } from './core/db';
 import { SynthesizerComponent } from './view/Synthesizer.component';
 import { MenuComponent } from './view/Menu.component';
 import { CommonModule } from '@angular/common';
-import { BeatMachine } from './synthesizer/beat-machine';
+import packageJson from '../../package.json';
 
+export interface IAppSerialization extends ISerialization {
+
+    synthesizer: ISynthesizerSerialization
+
+    version: string,
+    animationEnabled: boolean
+    visualsEnabled: boolean
+    pauseOnLeaveWindow: boolean
+    showKeyboard: boolean
+}
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [ CommonModule, SynthesizerComponent, MenuComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
   
   
 
   <div class="app-wrapper">
 
-    <sy-menu [isActive]="isMenuOpen" (onClose)="toggleMenu($event)" />
+    <sy-menu [isActive]="isMenuOpen" (onClose)="toggleMenu($event)" (onDeletePreset)="onDeletePresets()" (onToggleVisuals)="toggleVisuals()" />
 
     <div class="content-wrapper">
 
@@ -39,7 +49,7 @@ import { BeatMachine } from './synthesizer/beat-machine';
 
             <div class="btn" title="Remove Visuals" (click)="collapseVisuals($event)">&#x2715;</div>
             <div class="btn" title="Download Visual" (click)="saveVisuals($event)">I</div>
-            <div class="btn" title="Visuals On/Off" (click)="toggleVisuals($event)">V</div>
+            <div class="btn" title="Visuals On/Off" (click)="toggleVisuals()">V</div>
             <div class="btn" title="Open visuals in new window" (click)="openVisualsInNewWindow($event)">W</div>
 
             <div class="btn" title="Menu On/Off" (click)="toggleMenu($event)" style="float:right;"></div>
@@ -173,20 +183,21 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     ngAfterViewInit(): void {
          
 
-         /** LOAD FROM LOCAL STORAGE */
-         const storageData = Storage.load()
+        /** LOAD FROM LOCAL STORAGE */
+        const storageData = Storage.load()
 
-         console.log('LOAD FROM STORAGE', storageData)
-         if(storageData) this.serializeIn(storageData, true)
+        console.log('LOAD FROM STORAGE', storageData)
+        if(storageData) this.serializeIn(storageData, true)
 
-         else this.serializeIn(DEFAULT_SESSION, false)
+        else this.serializeIn(DEFAULT_SESSION, false)
 
-         // Save Undo
-         Storage.saveUndo(storageData)
+        // Save Undo
+        Storage.saveUndo(storageData)
 
-         // Initialize visuals
-         Visual.flowField()
-         Visual.activeVisual?.restart()
+        // Initialize visuals
+        Visual.flowField()
+        Visual.visualsEnabled = G.visualsEnabled
+        //  Visual.activeVisual?.restart()
 
          // Change Background Colors
         let colors = JSON.parse(JSON.stringify(COLORS))
@@ -196,16 +207,19 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
 
         setInterval(() => {
 
-            if(i >= colors.length) { 
+            if(G.animationEnabled) {
+
+                if(i >= colors.length) { 
+                    
+                    i = 0
+                    colors.sort(() =>  Math.ceil((Math.random() * 2) - 1))
+                }
                 
-                i = 0
-                colors.sort(() =>  Math.ceil((Math.random() * 2) - 1))
+                // console.log('col', colors[i])
+                document.body.style.backgroundColor = colors[i]
+                
+                i++
             }
-
-            // console.log('col', colors[i])
-            document.body.style.backgroundColor = colors[i]
-
-            i++
 
         }, 20000 * (Tone.getTransport().bpm.value * .01))
 
@@ -265,14 +279,18 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     // ON CHANGE TAB
     toggleActive = (active:boolean) => {
 
+        if(!G.pauseOnLeaveWindow) return
+
         if (active) {
 
             this.synthesizer.mute(false)
             
             Visual.visualsEnabled = true
 
-            // Don't start transport here - let BeatMachine manage it
-            // Transport should only run when sequencers are playing
+            // Resume transport if it was paused
+            if(Tone.getTransport().state === 'paused') {
+                Tone.getTransport().start(Tone.getContext().currentTime)
+            }
         }
         else {
 
@@ -302,9 +320,15 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     }
 
     /** Enable/Disable Visuals*/
-    toggleVisuals = (e) => {
+    toggleVisuals = () => {
 
         Visual.visualsEnabled = !Visual.visualsEnabled
+    }
+
+    /** Enable/Disable Visuals*/
+    onDeletePresets = () => {
+
+        this.synthesizer.presetManager.reset()
     }
     
     /** Save image of visuals */
@@ -345,24 +369,45 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
     // Serialize
     serializeIn = (file: any, isString: boolean = false) => {
         
-        // file = ''
-        if(file == undefined) return
+        if(file == null) return
     
-        let o: ISynthesizerSerialization
+        let o: IAppSerialization
 
-        if(isString) o = JSON.parse(file)
+        if(isString) {
+          try {
+            o = JSON.parse(file)
+          } catch(e) {
+            console.error('Failed to parse stored data:', e)
+            console.log('Using DEFAULT_SESSION instead')
+            localStorage.removeItem('synthesizer-save')
+            o = DEFAULT_SESSION
+          }
+        }
         else o = file
 
         console.log('Serialize In', o)
+
+        G.version = o.version
+        G.animationEnabled = o.animationEnabled
+        G.visualsEnabled = o.visualsEnabled
+        G.pauseOnLeaveWindow = o.pauseOnLeaveWindow
+        G.showKeyboard = o.showKeyboard
     
-        this.synthesizer.serializeIn(o)
+        this.synthesizer.serializeIn(o.synthesizer)
     }
-    // TODO - MAKE VERSIONING HERE TOO FRO COMPATIBILITY
-    serializeOut = () => {
+
+    serializeOut = () : string =>  {
     
-        let o = this.synthesizer.serializeOut()
-    
-        console.log('serializeOut', o)
+        let o: IAppSerialization = {
+
+            version: packageJson.version,
+            animationEnabled: G.animationEnabled,
+            visualsEnabled: G.visualsEnabled,
+            pauseOnLeaveWindow: G.pauseOnLeaveWindow,
+            showKeyboard: G.showKeyboard,
+
+            synthesizer: this.synthesizer.serializeOut(),
+        }
 
         return JSON.stringify(o)
     }
