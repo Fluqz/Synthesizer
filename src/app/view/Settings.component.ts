@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
         
-    <div class="settings-wrapper" class:active={active}>
+    <div class="settings-wrapper" [class.active]="active">
 
         <div class="h-1">Settings</div>
 
@@ -36,13 +36,13 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
         position: absolute;
         top: 0px;
-        left: calc(15% / 2);
+        left: 10%;
 
         padding: 20px;
 
-        overflow: hidden;
+        overflow: scroll;
 
-        width: 85%;
+        width: 90%;
         height: 0px;
 
         font-size: 1.4rem;
@@ -53,16 +53,13 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
         -moz-user-select: auto;
         -ms-user-select: auto;
         user-select: auto;
-
-        transition: height 1s cubic-bezier(0.215, 0.610, 0.355, 1);
     }
 
     .settings-wrapper.active {
 
         /* min-height: 100vh; */
         /* height: auto; */
-        min-height: 100vh;
-        overflow-y: scroll;
+        height: 100vh;
     }
 
     .settings-wrapper .btn {
@@ -123,14 +120,4 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 export class SettingsComponent {
 
     @Input('active') active:boolean = true
-    @Output('onClose') onClose: EventEmitter<null> = new EventEmitter()
-
-    toggleMenu() {
-
-        // active = !active
-
-        console.log('TOGGLE FROM INSIDE MENU')
-
-        this.onClose.next(null)
-    }
 }

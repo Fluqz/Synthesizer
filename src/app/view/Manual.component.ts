@@ -12,7 +12,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
 
-    <div class="manual-wrapper" class:active={active}>
+    <div class="manual-wrapper" [class.active]="active">
 
         <div class="h-1">Manual</div>
 
@@ -143,16 +143,16 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 
         position: absolute;
         top: 0px;
-        left: calc(15% / 2);
+        left: 10%;
 
         padding: 20px;
 
-        width: 85%;
+        width: 90%;
         height: 0px;
 
         font-size: 1.4rem;
 
-        overflow: hidden;
+        overflow: scroll;
 
         background-color: transparent;
 
@@ -160,16 +160,11 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
         -moz-user-select: auto;
         -ms-user-select: auto;
         user-select: auto;
-
-        transition: height 1s cubic-bezier(0.215, 0.610, 0.355, 1);
     }
 
     .manual-wrapper.active {
 
-        /* min-height: 100vh; */
-        /* height: auto; */
-        min-height: 100vh;
-        overflow-y: scroll;
+        height: 100vh;
     }
 
     .manual-wrapper .btn {
@@ -238,22 +233,6 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 export class ManualComponent {
 
 
-    @Input('avtive') active:boolean = true
-
-    @Output('onClose') onClose: EventEmitter<null> = new EventEmitter()
-
-    toggleMenu = () => {
-
-        // active = !active
-
-        console.log('TOGGLE FROM INSIDE MENU')
-
-        this.onClose.next(null)
-    }
-
-    constructor() {
-
-    }
-
+    @Input('active') active:boolean = true
 
 }

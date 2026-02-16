@@ -1,7 +1,7 @@
 
 
 
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output } from '@angular/core';
 import type { MenuNavigation } from '../core/definitions';
 import { SettingsComponent } from './Settings.component';
 import { ManualComponent } from './Manual.component';
@@ -19,8 +19,9 @@ import { CommonModule } from '@angular/common';
 
     <div class="menu-wrapper" [class.active]="isActive">
 
-        <div class="btn" title="Menu On/Off" (click)="toggleMenu()" style="float:right;"></div>
+        <div id="toggle-menu" class="btn" title="Menu On/Off" (click)="toggleMenu()" style="float:right;"></div>
 
+        
         <div class="menu-nav">
 
             <div [class.active]="navigation == 'MANUAL'" (click)="selectManuals()">MANUAL</div>
@@ -28,18 +29,13 @@ import { CommonModule } from '@angular/common';
 
         </div>
 
+        <div class="menu-content"> 
 
-        <div *ngIf="navigation == 'SETTINGS'">
-            
-            <Settings></Settings>
-
-        </div>
-
-        <div *ngIf="navigation == 'MANUAL'">
-
-            <Manual></Manual>
+            <sy-settings [active]="navigation == 'SETTINGS'"></sy-settings>
+            <sy-manual [active]="navigation == 'MANUAL'"></sy-manual>
 
         </div>
+
 
     </div>
 
@@ -57,6 +53,9 @@ import { CommonModule } from '@angular/common';
         width: 100%;
 
         height: 0px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
 
         background-color: var(--c-y);
 
@@ -75,14 +74,21 @@ import { CommonModule } from '@angular/common';
         height: 100vh;
     }
 
+    .menu-wrapper #toggle-menu {
+
+        position: absolute;
+        top: 0px;
+        right: 0px;
+    }
+
     .menu-wrapper .menu-nav {
 
         position: absolute;
         left: 0px;
         top: 0px;
 
-        width: 5%;
-        height: 50px;
+        width: 10%;
+        height: 100%;
         line-height: 50px;
 
         text-align: center;
@@ -91,14 +97,24 @@ import { CommonModule } from '@angular/common';
     .menu-wrapper .menu-nav div {
 
         width: 100%;
-        height: 100%;
+        height: 50px;
+
+        cursor: pointer;
     }
+
+    .menu-wrapper .menu-nav .menu-content {
+
+        width: 90%;
+        height: 100%;
+    }        
 
     .menu-wrapper .menu-nav div.active,
     .menu-wrapper .menu-nav div.active:active {
 
         background-color: var(--c-w);
         color: var(--c-b);
+
+        cursor: default;
     }
 
     .menu-wrapper .menu-nav div:hover {
@@ -129,23 +145,27 @@ export class MenuComponent {
 
     navigation: MenuNavigation = 'MANUAL'
 
-    constructor() {}
+    constructor(public cdr: ChangeDetectorRef) {}
 
     selectManuals = () => {
 
         this.navigation = 'MANUAL'
+
+        this.cdr.detectChanges()
     }
 
     selectSettings = () => {
 
         this.navigation = 'SETTINGS'
+
+        this.cdr.detectChanges()
     }
 
     toggleMenu = () => {
 
-        // active = !active
-
         console.log('TOGGLE FROM INSIDE MENU')
+
+        this.cdr.detectChanges()
 
         this.onClose.next(null)
     }
