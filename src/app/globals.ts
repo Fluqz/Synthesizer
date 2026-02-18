@@ -10,6 +10,9 @@ export class G {
 
     static debug = true
 
+    /** Audio parameter ramping duration in seconds (prevents zipper noise) */
+    static AUDIO_RAMP_DURATION = 0.05
+
     static w: number = 0
     static h: number = 0
 

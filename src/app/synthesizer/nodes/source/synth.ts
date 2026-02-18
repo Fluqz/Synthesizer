@@ -2,6 +2,7 @@ import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
 import { Synthesizer } from '../../synthesizer';
 import { ParamType } from '../node';
+import { G } from '../../../globals';
 
 
 /** {
@@ -116,8 +117,8 @@ export class Synth extends Instrument {
     set volume(v: number) {
 
         this._volume = v
-        // this.gain.gain.setValueAtTime(this.volume, Tone.getContext().currentTime)
-        this.synth.volume.setValueAtTime(this.volume, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.synth.volume.linearRampToValueAtTime(this._volume, now + G.AUDIO_RAMP_DURATION)
     }
     get volume() { return this._volume }
 

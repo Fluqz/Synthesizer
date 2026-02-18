@@ -2,6 +2,7 @@ import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
 import { Synthesizer } from '../../synthesizer';
 import { ParamType, Node } from '../node';
+import { G } from '../../../globals';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext';
 
 
@@ -85,8 +86,8 @@ export class Oscillator extends Instrument {
 
         this._frequency = f
 
-        this.osc.frequency.setValueAtTime(this._frequency, Tone.getContext().currentTime)
-        // this.osc.frequency.exponentialRampToValueAtTime(this._frequency, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.osc.frequency.linearRampToValueAtTime(this._frequency, now + G.AUDIO_RAMP_DURATION)
     }
 
     get volume() { return this._volume }
@@ -94,7 +95,8 @@ export class Oscillator extends Instrument {
 
         this._volume = v
 
-        this.gain.gain.setValueAtTime(this._volume, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.gain.gain.linearRampToValueAtTime(this._volume, now + G.AUDIO_RAMP_DURATION)
     }
 
     get wave() { return this._wave }
@@ -114,10 +116,10 @@ export class Oscillator extends Instrument {
     get detune() { return this._detune }
     set detune(d) {
 
-
         this._detune = d
 
-        this.osc.detune.setValueAtTime(this._detune, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.osc.detune.linearRampToValueAtTime(this._detune, now + G.AUDIO_RAMP_DURATION)
     }
 
     get phase() { return this._phase }

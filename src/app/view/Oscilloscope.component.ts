@@ -74,6 +74,7 @@ export class OscilloscopeComponent {
   private connectedOuput: any
 
   private scheduleID
+  private animationFrameID: number
 
   private analyser: AnalyserNode
   private bufferLength: number
@@ -138,16 +139,21 @@ export class OscilloscopeComponent {
     this.output.connect(this.analyser)
 
     if(this.scheduleID != undefined) Tone.getTransport().clear(this.scheduleID)
+    if(this.animationFrameID != undefined) cancelAnimationFrame(this.animationFrameID)
 
-    this.scheduleID = Tone.getTransport().scheduleRepeat((t) => {
-      Tone.Draw.schedule(this.draw, t)
-    }, 1 / 12)
+    const update = () => {
+      this.draw()
+      this.animationFrameID = requestAnimationFrame(update)
+    }
+    this.animationFrameID = requestAnimationFrame(update)
+    
     this.connectedOuput = this.output
   }
 
   disconnect = () => {
 
     if(this.scheduleID != undefined) Tone.getTransport().clear(this.scheduleID)
+    if(this.animationFrameID != undefined) cancelAnimationFrame(this.animationFrameID)
 
     // output.disconnect(analyser)
 

@@ -38,7 +38,7 @@ export class Distortion extends Effect {
 
         this._gain = g
 
-        this.distortion.distortion = this._gain
+        this.distortion.set({ distortion: this._gain })
     }
 
     override serializeIn(o) {

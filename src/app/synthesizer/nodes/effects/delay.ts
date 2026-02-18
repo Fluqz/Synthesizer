@@ -2,6 +2,7 @@ import * as Tone from 'tone'
 
 import { Effect } from "./effect"
 import { ParamType, Node } from '../node'
+import { G } from '../../../globals';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext'
 
 
@@ -40,7 +41,8 @@ export class Delay extends Effect {
     set wet(w: number) {
 
         this._wet = w
-        this.feedbackDelay.wet.setValueAtTime(this._wet, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.feedbackDelay.wet.linearRampToValueAtTime(this._wet, now + G.AUDIO_RAMP_DURATION)
     }
 
     get delayTime() { return this._delayTime }
@@ -56,7 +58,8 @@ export class Delay extends Effect {
 
         this._feedback = f
 
-        this.feedbackDelay.feedback.setValueAtTime(this._feedback, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.feedbackDelay.feedback.linearRampToValueAtTime(this._feedback, now + G.AUDIO_RAMP_DURATION)
     }
 
 

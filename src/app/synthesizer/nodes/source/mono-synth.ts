@@ -76,9 +76,9 @@ export class MonoSynth extends Instrument {
 
     set volume(v: number) {
 
-        this._volume = v 
-        this.synth.volume.setValueAtTime(this.volume, Tone.getContext().currentTime)
-        // this.gain.gain.setValueAtTime(this.volume, Tone.getContext().currentTime)
+        this._volume = v
+        const now = Tone.getContext().currentTime
+        this.synth.volume.linearRampToValueAtTime(this._volume, now + 0.05)
     }
     get volume() { return this._volume }
 

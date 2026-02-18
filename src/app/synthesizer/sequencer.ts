@@ -365,6 +365,8 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
 
     stop() {
 
+        // ARE ACTIVENOTES REMOVED ??? Visuals continue playing
+
         if(this.toneSequence) {
             
             this.toneSequence.cancel(Tone.getContext().currentTime)

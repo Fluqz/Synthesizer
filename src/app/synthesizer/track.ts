@@ -3,6 +3,7 @@ import { Synthesizer, type ISerialization, type ISerialize, type Channel, type I
 import { Node, type INodeSerialization } from './nodes/node'
 import { InstrumentType, type Instrument, Delay } from './nodes'
 import { Util } from '../util/util'
+import { G } from '../globals'
 
 export interface ITrackSerialization extends ISerialization {
 
@@ -137,7 +138,8 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         this._volume = db
 
-        this.volumeNode.volume.exponentialRampTo(this._volume, .04, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.volumeNode.volume.linearRampToValueAtTime(this._volume, now + G.AUDIO_RAMP_DURATION)
     }
 
     /** Silences/Unsilences the track volume */
@@ -147,7 +149,8 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         if(m == true && this.soloEnabled == true) this.solo(false) 
 
-        if(this.isMuted) this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, .15, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        if(this.isMuted) this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, G.AUDIO_RAMP_DURATION, now)
         else {
 
             // Any track left in solo mode? then only change self volume back to normal
@@ -161,11 +164,11 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             if(soloStillActive) {
 
                 // Set volume to -Infinity
-                this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, .2, Tone.getContext().currentTime)
+                this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, G.AUDIO_RAMP_DURATION, now)
             }
             else {
 
-                this.volumeNode.volume.exponentialRampTo(this._volume, .2, Tone.getContext().currentTime)
+                this.volumeNode.volume.exponentialRampTo(this._volume, G.AUDIO_RAMP_DURATION, now)
             }
         }
     }
@@ -177,10 +180,11 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         if(this.soloEnabled == true && this.isMuted == true) this.mute(false)
 
+        const now = Tone.getContext().currentTime
         if(this.soloEnabled) { // SOLO
 
             // Set volume
-            this.volumeNode.volume.exponentialRampTo(this._volume, .15, Tone.getContext().currentTime)
+            this.volumeNode.volume.exponentialRampTo(this._volume, G.AUDIO_RAMP_DURATION, now)
 
             for(let t of this.synthesizer.tracks) {
 
@@ -189,7 +193,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
                 // Ignore others in solo mode
                 if(t.soloEnabled) continue
                 // Silence every other track
-                t.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, .2, Tone.getContext().currentTime)
+                t.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, G.AUDIO_RAMP_DURATION, now)
             }
         }
         else { // NOT SOLO
@@ -205,7 +209,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             if(staySoloMode) {
 
                 // Set volume to -Infinity
-                this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, .2, Tone.getContext().currentTime)
+                this.volumeNode.volume.exponentialRampTo(Number.NEGATIVE_INFINITY, G.AUDIO_RAMP_DURATION, now)
 
             }
             else {
@@ -216,7 +220,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
                     if(t.isMuted) continue
                     if(t.soloEnabled) continue
 
-                    t.volumeNode.volume.exponentialRampTo(t._volume, .2, Tone.getContext().currentTime)
+                    t.volumeNode.volume.exponentialRampTo(t._volume, G.AUDIO_RAMP_DURATION, now)
                 }
             }
         }

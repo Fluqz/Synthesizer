@@ -1614,6 +1614,135 @@ export const DEFAULT_PRESETS: IPreset[] =
       ],
       "id": 0,
       "name": "singing birds"
+    },
+    {
+    "bpm": 120,
+    "volume": -9.999999999999998,
+    "octave": 2,
+    "channel": 0,
+    "tracks": [
+        {
+        "enabled": true,
+        "index": 0,
+        "octaveOffset": 1,
+        "channel": 0,
+        "volume": -6,
+        "instrument": {
+            "name": "FMSynth",
+            "enabled": true,
+            "collapsed": false,
+            "volume": -2,
+            "detune": 0.5,
+            "portamento": 0,
+            "harmonicity": 3,
+            "phase": 0,
+            "attack": 0.01,
+            "decay": 0.01,
+            "sustain": 1,
+            "release": 0.5
+        },
+        "nodes": [
+            {
+            "name": "Tremolo",
+            "enabled": true,
+            "collapsed": false,
+            "wet": 0.5,
+            "frequency": 5,
+            "depth": 1
+            },
+            {
+            "name": "Delay",
+            "enabled": true,
+            "collapsed": false,
+            "wet": 0.5,
+            "delayTime": 0.12,
+            "feedback": 0.8
+            },
+            {
+            "name": "Delay",
+            "enabled": true,
+            "collapsed": false,
+            "wet": 0.56,
+            "delayTime": 0.12,
+            "feedback": 0.8
+            }
+        ],
+        "soloEnabled": false,
+        "hold": {
+            "enabled": "OFF",
+            "activeKeys": [
+            "F#2",
+            "A#2",
+            "D#3"
+            ]
+        },
+        "isMuted": false,
+        "isCollapsed": false
+        }
+    ],
+    "sequencers": [
+        {
+        "index": 4,
+        "channel": [
+            0
+        ],
+        "sequence": [
+            {
+            "id": 0,
+            "note": "F#1",
+            "time": 0,
+            "length": 0.124,
+            "velocity": 1
+            },
+            {
+            "id": 1,
+            "note": "A#1",
+            "time": 0.124,
+            "length": "16n",
+            "velocity": 1
+            },
+            {
+            "id": 2,
+            "note": "D#2",
+            "time": 0.25,
+            "length": "16n",
+            "velocity": 1
+            },
+            {
+            "id": 3,
+            "note": "F#2",
+            "time": 0.375,
+            "length": "16n",
+            "velocity": 1
+            },
+            {
+            "id": 4,
+            "note": "D#2",
+            "time": 0.5,
+            "length": "16n",
+            "velocity": 1
+            },
+            {
+            "id": 5,
+            "note": "A#1",
+            "time": 0.625,
+            "length": "16n",
+            "velocity": 1
+            },
+            {
+            "id": 6,
+            "note": "F#1",
+            "time": 0.751,
+            "length": "16n",
+            "velocity": 1
+            }
+        ],
+        "humanize": false,
+        "bars": 1,
+        "noteLength": "1/16"
+        }
+    ],
+    "id": 1001,
+    "name": "Wabern"
     }
   ]
-

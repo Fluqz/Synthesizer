@@ -253,7 +253,8 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     /** Set Master Volume */
     setVolume(v:number) {
 
-        this.volume.volume.setValueAtTime(v, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        this.volume.volume.linearRampToValueAtTime(v, now + G.AUDIO_RAMP_DURATION)
     }
 
     /** Mute master */
@@ -261,8 +262,9 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
 
         this.isMuted = m === true ? true : false
 
-        if(this.isMuted) Tone.getDestination().volume.exponentialRampTo(Number.NEGATIVE_INFINITY, .2, Tone.getContext().currentTime)
-        else Tone.getDestination().volume.exponentialRampTo(this.volume.volume.value, .2, Tone.getContext().currentTime)
+        const now = Tone.getContext().currentTime
+        if(this.isMuted) Tone.getDestination().volume.exponentialRampTo(Number.NEGATIVE_INFINITY, G.AUDIO_RAMP_DURATION, now)
+        else Tone.getDestination().volume.exponentialRampTo(this.volume.volume.value, G.AUDIO_RAMP_DURATION, now)
 
         // Tone.getDestination().mute = this.isMuted
     }
