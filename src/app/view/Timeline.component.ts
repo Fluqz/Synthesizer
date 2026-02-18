@@ -36,7 +36,9 @@ export interface DragState {
     startTime: number
     endTime: number
     dragOffsetX: number
+    dragOffsetY: number
     handle: number  // 0 = start, 1 = end
+    startRowIndex: number
 }
 
 @Component({
@@ -112,10 +114,12 @@ export interface DragState {
                             
                                             
                             <div class="drag-handle drag-start"
-                                    (pointerdown)="resizeNoteStartHandler($event, note, 'start')"></div>
+                                    (pointerdown)="resizeNoteStartHandler($event, note, 'start')"
+                                    (pointerup)="$event.stopPropagation(); $event.stopImmediatePropagation()"></div>
                                     
                             <div class="drag-handle drag-end"
-                                    (pointerdown)="resizeNoteStartHandler($event, note, 'end')"></div>
+                                    (pointerdown)="resizeNoteStartHandler($event, note, 'end')"
+                                    (pointerup)="$event.stopPropagation(); $event.stopImmediatePropagation()"></div>
 
                         </sy-note>
 
@@ -276,7 +280,9 @@ export interface DragState {
         startTime: 0,
         endTime: 0,
         dragOffsetX: 0,
-        handle: 0
+        dragOffsetY: 0,
+        handle: 0,
+        startRowIndex: 0
     }
 
     /** 
@@ -604,6 +610,11 @@ export interface DragState {
 
         e.stopPropagation()
 
+        // Don't process if clicking drag handle
+        if((e.target as HTMLElement).classList.contains('drag-handle')) {
+            return
+        }
+
         // Reset stored click ID on mouse down
         this._clickedSequenceObjectID = null
         this.pointerMovedAmount = 0
@@ -692,10 +703,15 @@ export interface DragState {
             time = Math.round(time / gridInBars) * gridInBars
         }
 
-        // Only update if time actually changed
-        const currentTime = typeof this.alteredSequenceObject.time === 'number' ? this.alteredSequenceObject.time : 0
-        if(Math.abs(currentTime - time) > 0.0001) {
-            this.alteredSequenceObject.time = time
+        // Initialize alteredSequenceObject if not already done
+        if(!this.alteredSequenceObject) {
+            this.alteredSequenceObject = { ...this.selectedNote }
+        }
+
+         // Only update if time actually changed
+         const currentTime = typeof this.alteredSequenceObject.time === 'number' ? this.alteredSequenceObject.time : 0
+         if(Math.abs(currentTime - time) > 0.0001) {
+             this.alteredSequenceObject.time = time
             // Update DOM directly for smooth drag (no change detection)
             this.draggedNoteElement.style.left = posX + 'px'
         }
@@ -783,13 +799,19 @@ export interface DragState {
 
         e.stopPropagation()
 
+        console.log('notePointerUp called - pointerMovedAmount:', this.pointerMovedAmount, 'note.id:', note.id)
+
         const maxRange = 1
 
         if(this.pointerMovedAmount < maxRange) {
 
             this._clickedSequenceObjectID = note.id
+            console.log('Setting _clickedSequenceObjectID to:', note.id)
         }
-        else this._clickedSequenceObjectID = null
+        else {
+            this._clickedSequenceObjectID = null
+            console.log('Clearing _clickedSequenceObjectID')
+        }
     }
 
     /**
@@ -806,7 +828,7 @@ export interface DragState {
         
         // Get the note element (parent of drag handle)
         this.draggedNoteElement = target.closest('.note') as HTMLElement
-        
+
         this.dragState = {
             active: true,
             type: which === 'start' ? 'resize-start' : 'resize-end',
@@ -816,11 +838,13 @@ export interface DragState {
             startTime: Tone.Time(note.time).toSeconds(),
             endTime: Tone.Time(note.time).toSeconds() + Tone.Time(note.length).toSeconds(),
             dragOffsetX: e.clientX - target.getBoundingClientRect().left,
-            handle: which === 'start' ? 0 : 1
+            dragOffsetY: 0,
+            handle: which === 'start' ? 0 : 1,
+            startRowIndex: 0
         }
 
         this.selectedNote = note
-        this.alteredSequenceObject = { ...note }
+        this.alteredSequenceObject = null
     }
 
     /**
@@ -833,6 +857,16 @@ export interface DragState {
         if(!this.selectedNote || !this.draggedNoteElement) return
 
         const deltaX = e.clientX - this.dragState.startClientX
+        const hasMovement = Math.abs(deltaX) > 3
+
+        // Only initialize alteredSequenceObject and apply styles if there's actual movement
+        if(!hasMovement) return
+
+        // Initialize alteredSequenceObject on first significant movement
+        if(!this.alteredSequenceObject) {
+            this.alteredSequenceObject = { ...this.selectedNote }
+        }
+
         // Convert pixels to bar units
         const pixelsPerBar = this.timelineRect.width / this._bars
         const deltaInBars = deltaX / pixelsPerBar
@@ -872,7 +906,7 @@ export interface DragState {
             const newLeft = ((newStartTime / this._bars) * this.timelineRect.width)
             this.draggedNoteElement.style.left = newLeft + 'px'
         }
-        
+
         this.draggedNoteElement.style.width = newWidth + 'px'
     }
 
@@ -883,8 +917,10 @@ export interface DragState {
 
         if(!this.dragState.active || !this.dragState.type?.includes('resize')) return
 
-        // Commit the change
-        if(this.selectedNote && this.alteredSequenceObject) {
+        // Only commit if there was actual resize movement
+        const hasMovement = Math.abs(e.clientX - this.dragState.startClientX) > 3
+        
+        if(hasMovement && this.selectedNote && this.alteredSequenceObject) {
             this.sequencer.updateNote(
                 this.selectedNote.id,
                 this.alteredSequenceObject.note,
@@ -897,8 +933,8 @@ export interface DragState {
             this.saveUndo()
         }
 
-        // Clear manual DOM styles so binding takes over (only for start handle)
-        if(this.draggedNoteElement) {
+        // Only clear DOM styles if we actually applied them (i.e., if alteredSequenceObject was created)
+        if(this.alteredSequenceObject && this.draggedNoteElement) {
             if(this.dragState.handle === 0) {
                 this.draggedNoteElement.style.left = ''
             }
@@ -915,14 +951,16 @@ export interface DragState {
             startTime: 0,
             endTime: 0,
             dragOffsetX: 0,
-            handle: 0
+            dragOffsetY: 0,
+            handle: 0,
+            startRowIndex: 0
         }
 
         this.selectedNote = null
         this.alteredSequenceObject = null
         this.draggedNoteElement = null
         
-        // Update view after drag ends
+        // Trigger change detection after reset
         this.cdr.markForCheck()
     }
 
