@@ -331,6 +331,9 @@ export interface DragState {
 
     /** Reference to currently dragged note element for direct DOM updates */
     private draggedNoteElement: HTMLElement | null = null
+    
+    /** Store original note time at start of drag to detect changes */
+    private originalNoteTime: number | null = null
 
     /** Timeline HTML element ref */
     @ViewChild('timeline')
@@ -637,6 +640,9 @@ export interface DragState {
         this.pointerPositionX = e.clientX
         this.pointerPositionY = e.clientY
 
+        // Store original time to compare against at end of drag
+        this.originalNoteTime = this.selectedNote.time as any
+
         this.alteredSequenceObject = {
 
             id: this.selectedNote.id,
@@ -757,7 +763,7 @@ export interface DragState {
         
         if(this.selectedNote && this.alteredSequenceObject && this.selectedNote.id == this.alteredSequenceObject.id) {
 
-            if(this.selectedNote.time != this.alteredSequenceObject.time) {
+            if(this.originalNoteTime != this.alteredSequenceObject.time) {
                 
                 this.sequencer.updateNote(
                     this.alteredSequenceObject.id, 
@@ -775,13 +781,16 @@ export interface DragState {
 
         if(this.isNoteDrag) {
 
-            // Clear manual DOM styles so binding takes over
-            if(this.draggedNoteElement) {
+            // Only clear manual DOM styles if the note actually changed position
+            // If it didn't change, keep the inline style to prevent snapping
+            const noteChanged = this.originalNoteTime != this.alteredSequenceObject.time
+            if(this.draggedNoteElement && noteChanged) {
                 this.draggedNoteElement.style.left = ''
             }
 
             this.selectedNote = null
             this.alteredSequenceObject = null
+            this.originalNoteTime = null
             
             this.clickOffsetX = 0
             
