@@ -602,8 +602,6 @@ export interface DragState {
 
     notePointerDown(e, note: SequenceObject) {
 
-        console.log('notePointerDown')
-
         e.stopPropagation()
 
         // Reset stored click ID on mouse down
@@ -660,8 +658,9 @@ export interface DragState {
         this.pointerPositionX = e.clientX
         this.pointerPositionY = e.clientY
         
-        console.log('notePointerMove', this.pointerMovedAmount)
-
+        // Only mark as drag if movement exceeds threshold
+        if(this.pointerMovedAmount < 3) return
+        
         this.isNoteDrag = true
         document.body.style.cssText = 'cursor: grabbing !important;'
 
@@ -708,23 +707,42 @@ export interface DragState {
     @HostListener('document:mouseup', ['$event'])
     onDocPointerUp(e:PointerEvent) {
 
-        e.stopPropagation()
+       e.stopPropagation()
 
-        this.isPointerDown = false
-        document.body.style.cursor = 'default'
+       this.isPointerDown = false
+       document.body.style.cursor = 'default'
 
-        this.onPointerUp(e)
-        this.resizeNoteEndHandler(e)
-    } 
+       this.onPointerUp(e)
+       this.resizeNoteEndHandler(e)
+    }
+
+    @HostListener('document:pointerleave', ['$event'])
+    onPointerLeaveDocument(e:PointerEvent) {
+
+       // End note drag if pointer leaves window
+       if(this.isPointerDown && this.isNoteDrag) {
+           
+           // Commit the note at current position
+           this.onPointerUp(e)
+       }
+
+       // End resize if pointer leaves window
+       if(this.dragState.active && this.dragState.type?.includes('resize')) {
+           
+           this.resizeNoteEndHandler(e)
+       }
+    }
 
     onPointerUp = (e) => {
 
         if(this.dragState.active && this.dragState.type?.includes('resize')) return
         
-        if(this.selectedNote && this.selectedNote.id == this.alteredSequenceObject.id) {
+        if(!this.isNoteDrag) return
+        
+        if(this.selectedNote && this.alteredSequenceObject && this.selectedNote.id == this.alteredSequenceObject.id) {
 
             if(this.selectedNote.time != this.alteredSequenceObject.time) {
-
+                
                 this.sequencer.updateNote(
                     this.alteredSequenceObject.id, 
                     this.alteredSequenceObject.note, 
@@ -764,8 +782,6 @@ export interface DragState {
     notePointerUp(e: PointerEvent, note: SequenceObject) {
 
         e.stopPropagation()
-
-        console.log('up',this.pointerPositionX, this.pointerPositionY, e.clientX, e.clientY)
 
         const maxRange = 1
 

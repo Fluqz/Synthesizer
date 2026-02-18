@@ -33,18 +33,20 @@ import { CommonModule } from "@angular/common";
             </div>
 
             <!-- Expanded view (on hover via CSS) -->
-            <div class="note-controls" [class.selected]="isSelected" (dblclick)="onNoteControlDblClick($event)">
+            <div class="note-controls" [class.selected]="isSelected" [style.bottom.px]="-height" [style.line-height.px]="height" (dblclick)="onNoteControlDblClick($event)">
                 <div class="control-group">
                     <div class="btn note-btn"
                             title="Note - Click to increase; Shift - Click to decrease" 
-                            (pointerdown)="onPointerDown($event, note)"
-                            (pointerup)="onChangeNote($event, note)">
+                            (pointerdown)="$event.stopPropagation()"
+                            (pointerup)="$event.stopPropagation()"
+                            (click)="onChangeNote($event, note)">
                         {{ noteDisplayText }}
                     </div>
                     <div class="btn octave-btn"
                             title="Octave - Click to increase; Shift - Click to decrease" 
-                            (pointerdown)="onPointerDown($event, note)"
-                            (pointerup)="onOctaveClick($event, note)">
+                            (pointerdown)="$event.stopPropagation()"
+                            (pointerup)="$event.stopPropagation()"
+                            (click)="onOctaveClick($event, note)">
                         {{ octaveDisplayText }}
                     </div>
                 </div>
@@ -99,8 +101,6 @@ styles: `
 
     /* Compact display - small text showing note+octave */
     .note-display {
-        font-size: 10px;
-        font-weight: bold;
         line-height: 1;
         white-space: nowrap;
         opacity: 1;
@@ -109,7 +109,7 @@ styles: `
     /* Expanded controls - hidden by default, shown on hover */
     .note-controls {
         position: absolute;
-        top: 0px;
+        bottom: -75px;
         left: 0px;
         background-color: var(--c-y);
         z-index: 10;
@@ -117,33 +117,24 @@ styles: `
         flex-direction: center;
         justify-content: center;
         align-items: center;
-        pointer-events: none;
 
         overflow: hidden;
         width: 0px;
         height: 0px;
-    }
-
-    .note-controls.selected {
-
-        width: 100%;
-        height: 100%;
-    }
-
-    /* Only buttons are clickable in controls, not the overlay itself */
-    .note-controls {
         pointer-events: none;
     }
 
-    .note-controls .btn {
+    .note-controls.selected {
+        width: 100%;
+        height: 100%;
         pointer-events: auto;
     }
 
-    
     .note-controls .control-group {
         display: flex;
         width: 100%;
         height: 100%;
+        pointer-events: auto;
     }
 
     .note .btn {
@@ -151,9 +142,10 @@ styles: `
         min-width: 30px;
         width: 50%;
         height: 100%;
-        font-size: 8px;
         cursor: pointer;
         color: inherit;
+        pointer-events: auto;
+        line-height:inherit;
     }
 
     .note .btn:hover {
@@ -238,7 +230,6 @@ export class NoteComponent implements OnDestroy {
         const oldNote = this._note
         this._note = note
 
-        console.log('set note')
         if(oldNote != note) {
             
             this.noteDisplayText = this.getNote(this._note)
@@ -274,10 +265,10 @@ export class NoteComponent implements OnDestroy {
         return Tone.Time(t).toSeconds()
     }
 
-    onPointerDown(e:PointerEvent, note: SequenceObject) {
+    onNoteClick(e, note: SequenceObject) {
 
         e.stopPropagation()
-        e.stopImmediatePropagation()
+
     }
 
     /** DblClick Note Event 
@@ -328,9 +319,13 @@ export class NoteComponent implements OnDestroy {
 
         e.stopPropagation()
 
-        const fullNote = Tone.Frequency(note.note).toNote().toString()
-        const octave = fullNote[fullNote.length - 1]
-        const currentNote = fullNote.replace(octave, '')
+        const fullNote = Tone.Frequency(this._note.note).toNote().toString()
+        
+        // Extract octave (last digit(s))
+        const octaveMatch = fullNote.match(/\d+$/)
+        const octave = octaveMatch ? octaveMatch[0] : ''
+        // Current note is everything except the octave
+        const currentNote = fullNote.substring(0, fullNote.length - octave.length)
 
         let i = Synthesizer.notes.indexOf(currentNote)
 
@@ -344,18 +339,20 @@ export class NoteComponent implements OnDestroy {
 
         const newNote = Synthesizer.notes[i] + octave
 
-        // Update via sequencer (not direct mutation)
-        this.sequencer.updateNote(
-            note.id,
-            newNote,
-            note.time,
-            note.length,
-            note.velocity
-        )
-
+        // Update display text BEFORE updating note to prevent it being overwritten
         this.noteDisplayText = Synthesizer.notes[i]
 
-        console.log('change note', this.noteDisplayText)
+        // Update via sequencer (not direct mutation)
+        this.sequencer.updateNote(
+            this._note.id,
+            newNote,
+            this._note.time,
+            this._note.length,
+            this._note.velocity
+        )
+
+        // Update internal note reference with the new note value
+        this._note.note = newNote
 
         this.cdr.detectChanges()
 
@@ -370,9 +367,12 @@ export class NoteComponent implements OnDestroy {
 
         e.stopPropagation()
 
-        const fullNote = Tone.Frequency(note.note).toNote().toString()
-        const octave = fullNote[fullNote.length - 1]
-        const currentNote = fullNote.replace(octave, '')
+        const fullNote = Tone.Frequency(this._note.note).toNote().toString()
+        // Extract octave (last digit(s))
+        const octaveMatch = fullNote.match(/\d+$/)
+        const octave = octaveMatch ? octaveMatch[0] : ''
+        // Current note is everything except the octave
+        const currentNote = fullNote.substring(0, fullNote.length - octave.length)
 
         let i = Synthesizer.octaves.indexOf(+octave)
 
@@ -386,18 +386,20 @@ export class NoteComponent implements OnDestroy {
 
         const newNote = currentNote + Synthesizer.octaves[i]
 
-        // Update via sequencer (not direct mutation)
-        this.sequencer.updateNote(
-            note.id,
-            newNote,
-            note.time,
-            note.length,
-            note.velocity
-        )
-
+        // Update display text BEFORE updating note to prevent it being overwritten
         this.octaveDisplayText = Synthesizer.octaves[i].toString()
 
-        console.log('change octave', this.octaveDisplayText)
+        // Update via sequencer (not direct mutation)
+        this.sequencer.updateNote(
+            this._note.id,
+            newNote,
+            this._note.time,
+            this._note.length,
+            this._note.velocity
+        )
+
+        // Update internal note reference with the new note value
+        this._note.note = newNote
 
         this.cdr.detectChanges()
 
