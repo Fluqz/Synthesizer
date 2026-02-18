@@ -27,20 +27,18 @@ import { CommonModule } from '@angular/common';
 
         <!-- { node.id } -->
 
-        <div class="node-content">
+        <div class="node-content" [class.padding-left]="!isInstrument && !collapsed && index > 1">
 
             <div class="node-header">
 
-                <div class="toggle-shrink-btn" (click)="toggleShrinking()"></div>
-        
-
+                <div class="toggle-shrink-btn" (click)="toggleCollapse()"></div>
                     
                 <div *ngIf="isEffect" class="enabled-btn" (click)="enable()" [class.enabled]="isEnabled"></div>
             
                 <div *ngIf="!isInstrument" class="delete" (click)="onDelete()">&#x2715;</div>
 
                     
-                <div class="node-title">{{ node.name[0].toUpperCase() + node.name.substr(1) }}</div>
+                <div class="node-title">{{ collapsed ? node.name.substring(0, 2) : node.name[0].toUpperCase() + node.name.substr(1) }}</div>
 
             </div>
 
@@ -117,7 +115,7 @@ import { CommonModule } from '@angular/common';
 
         position: relative;
 
-        min-width: 100px;
+        min-width: 75px;
         height: 100%;
 
         /* background-color: var(--c-g2); */
@@ -152,6 +150,11 @@ import { CommonModule } from '@angular/common';
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+
+    .node-content.padding-left {
+
+        padding-left: 10px;
     }
 
     ::ng-deep .node .level-meter {
@@ -191,6 +194,8 @@ import { CommonModule } from '@angular/common';
     .node.collapsed .node-title {
 
         top: calc(50% - (15px / 2));
+
+        height: 100%;
     }
 
     .node .delete {
@@ -223,7 +228,7 @@ import { CommonModule } from '@angular/common';
 
         position: absolute;
         top: 0px;
-        left: 20px;
+        left: 10px;
 
         border-radius: 100%;
 
@@ -243,7 +248,7 @@ import { CommonModule } from '@angular/common';
         height: 7px;
 
         position: absolute;
-        left: 35px;
+        left: 20px;
         top: 0px;
 
         cursor: pointer;
@@ -269,14 +274,14 @@ import { CommonModule } from '@angular/common';
 
         position:absolute;
         top:0px;
-        height: 100%;
-        width: 15px;
+        height: 75px;
+        width: 10px;
 
         text-align: center;
         cursor: pointer;
 
         color: var(--c-b);
-        background-color: var(--c-w);
+        background-color: var(--c-bl);
 
         font-size: 1.2rem;
 
@@ -316,10 +321,10 @@ export class NodeComponent implements OnDestroy {
         this._node = node
 
         this.isInstrument= node instanceof Instrument ? true : false
-        this.isEffect= node instanceof Effect ? true : false
+        this.isEffect = node instanceof Effect ? true : false
 
         this.nodeParameters = [ ...this._node.props.values() ]
-        this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
+        this.updateGroups()
     }
     get node() : Node { return this._node }
 
@@ -371,6 +376,12 @@ export class NodeComponent implements OnDestroy {
         return groups
     }
 
+    /** Sets the groups array with grouped note parameters. */
+    updateGroups() {
+
+        this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
+    }
+
     isDropdown(type: ParamType) { return ParamType.DROPDOWN == type }
     isKnob(type: ParamType) { return ParamType.KNOB == type }
     isSwitch(type: ParamType) { return ParamType.SWITCH == type }
@@ -408,7 +419,7 @@ export class NodeComponent implements OnDestroy {
 
         this.onShiftForward.next(this.node)
 
-        this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
+        this.updateGroups()
 
         this.saveUndo()
     }
@@ -417,12 +428,12 @@ export class NodeComponent implements OnDestroy {
 
         this.onShiftBackward.next(this.node)
 
-        this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
+        this.updateGroups()
 
         this.saveUndo()
     }
 
-    toggleShrinking() {
+    toggleCollapse() {
 
         this.saveUndo()
 

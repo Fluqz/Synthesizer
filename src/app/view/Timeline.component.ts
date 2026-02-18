@@ -166,7 +166,7 @@ export interface DragState {
         position: absolute;
         top: 0px;
         height: 100%;
-        background-color: var(--c-y);
+        background-color: var(--c-bl);
     }
 
     /* 16th notes - thinnest, most subtle */

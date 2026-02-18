@@ -32,7 +32,7 @@ import { G } from "../globals";
             [class.shifting-GIF]="animationEnabled"
             #knobDOM
             (pointerdown)="onPointerDown($event)"
-            (touchstart)="onTouchStart($event)"
+            (touchstart)="onPointerDown($event)"
             (dblclick)="toggleReset()"
             [style]="getTransformStyle()">
 
@@ -196,9 +196,6 @@ import { G } from "../globals";
 
         cursor: pointer;
     }
-
-    
-    
     `,
 }) 
 export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
@@ -288,6 +285,8 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
     isKeyDown: Boolean = false
     /** Is Shift key pressed down */
     isShiftDown: boolean = false
+    /** Is Shift key pressed down */
+    isMetaDown: boolean = false
 
     /** Amount of pixels the cursor is allowed to travel between the mousedown and mouseup event. 
      * If value is exeeding clickRange, no click has occured.
@@ -310,30 +309,45 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
     unsubscribeWheelObserver: Subscription
 
     /** On 'touchstart' event callback */
-    onTouchStart: any
+    onTouchStartBinding: () => void
     /** On 'touchmove' event callback */
-    onTouchMove: any
+    onTouchMoveBinding: () => void
     /** On 'touchend' event callback */
-    onTouchEnd: any
+    onTouchEndBinding: () => void
 
+    onPointerMoveBinding: () => void
+    onPointerUpBinding: () => void
+    onKeyDownBinding: () => void
+    onKeyUpBinding: () => void
+
+    onScrollBinding: () => void
 
     constructor() {
 
         /** On 'touchstart' event callback */
-        this.onTouchStart = this.onPointerDown.bind(this)
+        this.onTouchStartBinding = this.onPointerDown.bind(this)
         /** On 'touchmove' event callback */
-        this.onTouchMove = this.onPointerMove.bind(this)
+        this.onTouchMoveBinding = this.onPointerMove.bind(this)
         /** On 'touchend' event callback */
-        this.onTouchEnd = this.onPointerUp.bind(this)
+        this.onTouchEndBinding = this.onPointerUp.bind(this)
 
+        /** On 'touchstart' event callback */
+        this.onPointerMoveBinding = this.onPointerMove.bind(this)
+        /** On 'touchmove' event callback */
+        this.onPointerUpBinding = this.onPointerUp.bind(this)
+        /** On 'touchend' event callback */
+        this.onKeyDownBinding = this.onKeyDown.bind(this)
+        this.onKeyUpBinding = this.onKeyUp.bind(this)
 
-        document.addEventListener('pointermove', this.onPointerMove.bind(this))
-        document.addEventListener('pointerup', this.onPointerUp.bind(this))
-        document.addEventListener('touchmove', this.onTouchMove.bind(this))
-        document.addEventListener('touchend', this.onTouchEnd.bind(this))
+        this.onScrollBinding = this.onScroll.bind(this)
 
-        document.addEventListener('keydown', this.onKeyDown.bind(this))
-        document.addEventListener('keyup', this.onKeyUp.bind(this))
+        document.addEventListener('pointermove', this.onPointerMoveBinding)
+        document.addEventListener('pointerup', this.onPointerUpBinding)
+        document.addEventListener('touchmove', this.onTouchMoveBinding)
+        document.addEventListener('touchend', this.onTouchEndBinding)
+
+        document.addEventListener('keydown', this.onKeyDownBinding)
+        document.addEventListener('keyup', this.onKeyUpBinding)
 
     }
 
@@ -587,6 +601,7 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
                 this.adjustDragStartForShiftChange()
             }
         }
+        else if(e.key == 'Meta' && !this.isMetaDown) this.isMetaDown = true
     }
 
     /** On 'keyup' event callback */
@@ -600,10 +615,12 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
                 this.adjustDragStartForShiftChange()
             }
         }
+        else if(e.key == 'Meta' && this.isMetaDown) this.isMetaDown = false
     }
 
     /** Adjust drag start position when Shift state changes to prevent jumps */
     private adjustDragStartForShiftChange = () => {
+
         const oldEffectivePixelsPerFullRotation = this.lastDragShiftState ? this.pixelsPerFullRotation * 2 : this.pixelsPerFullRotation
         const newEffectivePixelsPerFullRotation = this.isShiftDown ? this.pixelsPerFullRotation * 2 : this.pixelsPerFullRotation
         
@@ -619,6 +636,9 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
 
     onScroll = (e: any) => {
         
+
+        if(!this.isMetaDown) return
+
         e.preventDefault()
         e.stopPropagation()
 
@@ -630,8 +650,8 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
             // Scroll up (negative deltaY) increases value, scroll down decreases
             const direction = this.scrollAccumulator > 0 ? 1 : -1
             const steps = Math.floor(Math.abs(this.scrollAccumulator) / this.scrollThreshold)
-            // Shift key = half speed
-            const effectiveStep = this.isShiftDown ? this.step * 0.5 : this.step
+            // CTRL key = half speed
+            const effectiveStep = this.isMetaDown ? this.step * 0.5 : this.step
             const valueChange = direction * steps * effectiveStep
 
             // Store pending scroll update
@@ -664,7 +684,7 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
         this.updateAngle()
 
         if (this.knobDOM) {
-            this.knobDOM.addEventListener('wheel', this.onScroll.bind(this))
+            this.knobDOM.addEventListener('wheel', this.onScrollBinding)
         }
     }
 
@@ -680,13 +700,15 @@ export class KnobComponent implements OnInit, OnChanges, AfterViewInit, OnDestro
             this.scrollRafId = null
         }
 
-        document.removeEventListener('pointermove', this.onPointerMove.bind(this))
-        document.removeEventListener('pointerup', this.onPointerUp.bind(this))
-        document.removeEventListener('touchmove', this.onTouchMove.bind(this))
-        document.removeEventListener('touchend', this.onTouchEnd.bind(this))
+        document.removeEventListener('pointermove', this.onPointerMoveBinding)
+        document.removeEventListener('pointerup', this.onPointerUpBinding)
+        document.removeEventListener('touchmove', this.onTouchMoveBinding)
+        document.removeEventListener('touchend', this.onTouchEndBinding)
 
-        document.removeEventListener('keydown', this.onKeyDown.bind(this))
-        document.removeEventListener('keyup', this.onKeyUp.bind(this))
+        document.removeEventListener('keydown', this.onKeyDownBinding)
+        document.removeEventListener('keyup', this.onKeyUpBinding)
+
+        if(this.knobDOM) this.knobDOM.removeEventListener('wheel', this.onScrollBinding)
 
         if(this.unsubscribeWheelObserver) this.unsubscribeWheelObserver.unsubscribe()
     }

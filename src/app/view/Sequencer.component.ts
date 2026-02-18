@@ -129,7 +129,9 @@ export const convertNoteLength = (n: NoteLength) => {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        background-color: var(--c-y)
+        background-color: var(--c-y);
+        border-bottom: 1px solid var(--c-g);
+
     }
 
     .sequencer-wrapper .sequence {

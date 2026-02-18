@@ -7,7 +7,7 @@ import { Component, ChangeDetectionStrategy, ElementRef, Input, ViewChild, Rende
 
   selector: 'sy-oscilloscope',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  // changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     
   <div id="oscilloscope" title="Oscilloscope" #container>

@@ -150,7 +150,7 @@ import { CommonModule } from "@angular/common";
 
         min-width: inherit;
         height: inherit;
-
+        min-height: 75px;
         /* padding: 5px; */
 
         background-color: var(--c-g);
@@ -159,6 +159,7 @@ import { CommonModule } from "@angular/common";
         overflow-x: auto;
         overflow-y: hidden;
         scrollbar-width: none;
+
     }
 
     .track-wrapper .track-options {
@@ -172,6 +173,7 @@ import { CommonModule } from "@angular/common";
 
         background-color: var(--c-y);
         color: var(--c-b);
+        border-bottom: 1px solid var(--c-g);
     }
 
     .track-wrapper .track-options.playing {
@@ -416,9 +418,9 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
         this.saveUndo()
     }
 
-    deleteNode = (e) => {
+    deleteNode = (node: _Node) => {
 
-        this.track.removeNode(e.detail)
+        this.track.removeNode(node)
 
         this.track = this.track
 
@@ -426,9 +428,9 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
     }
 
     /** Shift node forward in array */
-    shiftForward = (e) => {
+    shiftForward = (node: _Node) => {
 
-        this.track.shiftNodeForward(e.detail)
+        this.track.shiftNodeForward(node)
 
         this.track.connectNodes()
 
@@ -436,9 +438,9 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
     }
 
     /** Shift node back in array */
-    shiftBack = (e) => {
+    shiftBack = (node: _Node) => {
 
-        this.track.shiftNodeBackward(e.detail)
+        this.track.shiftNodeBackward(node)
 
         this.track.connectNodes()
 
@@ -446,11 +448,11 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
     }
 
     // Change Tracks Instrument
-    onChangeInstrument = (e) => {
+    onChangeInstrument = (e: InputEvent) => {
 
         if(this.track.instrument) this.track.instrument.releaseAll()
 
-        const ele = e.target
+        const ele = e.target as HTMLInputElement
 
         const source = ele.value
 

@@ -43,7 +43,7 @@ export const flowField = (p5) => {
     p5.createCanvas(G.w, G.h);
     p5.pixelDensity(1);
     p5.background(0);
-    p5.frameRate(15);
+    p5.frameRate(10);
     p5.stroke(255);
     p5.strokeWeight(1);
 
@@ -161,7 +161,6 @@ export const flowField = (p5) => {
 
   p5.draw = () => {
     
-    console.log('draw',!G.animationEnabled)
     if(!G.visualsEnabled) return
 
     // if(p5.frameCount % 50 == 0) {
@@ -291,10 +290,5 @@ export const flowField = (p5) => {
   p5.windowResized = () => {
     // TODO - aNOT WORKING
     // p5.resizeCanvas(G.w, G.h)
-  }
-
-  let CID;
-  p5.keyPressed = () => {
-    if (Visual.visualsEnabled) return;
   }
 }

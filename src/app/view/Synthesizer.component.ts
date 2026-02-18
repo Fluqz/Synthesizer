@@ -197,6 +197,8 @@ import { Key } from '../synthesizer/key'
         display: flex;
         align-items: center;
         justify-content: space-evenly;
+
+        background-color: var(--c-g);
     }
 
     .synthesizer-menu .btn {
