@@ -43,15 +43,17 @@ export const convertNoteLength = (n: NoteLength) => {
 
             <div class="btn-cont">
 
+                <div class="toggle-sequencers btn" title="Toggle Play/Pause" title="Play / Stop Sequencer" (click)="toggleStartStop()">{{ sequencer.isPlaying ? '⏸' : '▶' }}</div>
+                
+                <div class="btn noteLength" title="Choose note length" (click)="onNoteLength($event)">{{sequencer.noteLength}}</div>
+                
+                <div class="btn clear" title="Clear sequence" (click)="onClearSequence($event)">C</div>
+
+                <div class="btn duplicate" title="Duplicate sequencer" (click)="onDuplicateHandler($event)">D</div>
+                
+                <div class="btn bars deactivated" title="Amount of bars">{{sequencer.bars}}</div>
                 <div class="btn delete" title="Delete sequencer" (click)="onDelete()">&#x2715;</div>
                 
-                <div class="btn duplicate" title="Duplicate sequencer" (click)="onDuplicateHandler($event)">D</div>
-
-                <div class="toggle-sequencers btn" title="Toggle Play/Pause" title="Play / Stop Sequencer" (click)="toggleStartStop()">{{ sequencer.isPlaying ? '⏸' : '▶' }}</div>
-
-                <div class="btn noteLength" title="Choose note length" (click)="onNoteLength($event)">{{sequencer.noteLength}}</div>
-                <div class="btn bars deactivated" title="Amount of bars">{{sequencer.bars}}</div>
-
             </div>
 
 
@@ -291,6 +293,11 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
     updateBars() {
 
         this.bars = this.sequencer.bars
+    }
+
+    onClearSequence(e: MouseEvent) {
+
+        this.sequencer.clear()
     }
 
     onNoteLength(e: MouseEvent) {

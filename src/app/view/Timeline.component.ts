@@ -176,19 +176,19 @@ export interface DragState {
     /* 16th notes - thinnest, most subtle */
     .timeline .grid-16th {
         width: 0.5px;
-        opacity: 0.08;
+        opacity: 0.7;
     }
 
     /* 8th notes - medium */
     .timeline .grid-8th {
         width: 0.75px;
-        opacity: 0.25;
+        opacity: 0.8;
     }
 
     /* Quarter notes - prominent */
     .timeline .grid-quarter {
         width: 1px;
-        opacity: 0.5;
+        opacity: 0.9;
     }
 
     /* Bar boundaries - thickest, most visible */

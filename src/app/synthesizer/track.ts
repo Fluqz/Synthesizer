@@ -261,9 +261,11 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
     /** Releases all triggered notes */
     releaseNotes() {
 
+        if(this.instrument) this.instrument.releaseAll()
+        
         for(let n of this.activeNotes) this.triggerRelease(n, Tone.getContext().currentTime)
 
-        if(this.instrument) this.instrument.releaseAll()
+        this.activeNotes.clear()
     }
 
     /** Triggers the instruments note */
@@ -496,6 +498,12 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
         if(o.instrument) {
 
             let instrument: Instrument = Synthesizer.createNode(o.instrument.name) as Instrument
+            
+            if(!instrument) {
+                console.error('[Track.serializeIn] Failed to create instrument:', o.instrument.name)
+                return
+            }
+            
             instrument.serializeIn(o.instrument)
             this.setInstrument(instrument)
         }

@@ -286,6 +286,11 @@ import { CommonModule } from "@angular/common";
         background-color: var(--c-bl);
         color: var(--c-w);
     }
+    .btn.active {
+
+        background-color: var(--c-g);
+        color: var(--c-w);
+    }
 `,
 })
 export class TrackComponent implements AfterViewInit, OnDestroy {

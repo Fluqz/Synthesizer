@@ -121,29 +121,29 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         return true
     }
 
-    getUnusedChannels = (() => {
+    // getUnusedChannels = (() => {
 
-        const channels: Channel[] = []
+    //     const channels: Channel[] = []
 
-        return () => {
+    //     return () => {
 
-            channels.length = 0
+    //         channels.length = 0
 
-            for(let i = 0; i < Synthesizer.maxChannelCount; i++) {
+    //         for(let i = 0; i < Synthesizer.maxChannelCount; i++) {
                 
-                if(this.channels.indexOf(i as Channel) == -1) channels.push(i as Channel) 
-            }
+    //             if(this.channels.indexOf(i as Channel) == -1) channels.push(i as Channel) 
+    //         }
             
-            return channels
-        }
-    })()
+    //         return channels
+    //     }
+    // })()
 
     /** Add a note to the sequence */
     addNote(note: Tone.Unit.Frequency, time: Tone.Unit.Time, length: Tone.Unit.Time, velocity: number) {
 
         if(!Tone.isNote(note)) return
 
-        const n = { id: this.count++, note, time, length, velocity }
+        const n: SequenceObject = { id: this.count++, note, time, length, velocity }
 
         this.sequence.push(n)
         
@@ -400,6 +400,12 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
             Tone.getTransport().position = 0
             BeatMachine.stop()
         }
+    }
+
+    clear() {
+
+        this.sequence.length = 0
+        this.toneSequence.clear()
     }
 
     destroy() {
