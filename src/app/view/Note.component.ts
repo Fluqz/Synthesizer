@@ -26,11 +26,13 @@ import { CommonModule } from "@angular/common";
             [style.height.px]="height"
             [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
             [style.width.px]="getNoteWidth()">
-
+            
             <!-- Compact view (default) -->
             <div class="note-display">
                 {{ noteDisplayText + octaveDisplayText }}
             </div>
+
+            <ng-content></ng-content>
 
             <!-- Expanded view (on hover via CSS) -->
             <div class="note-controls" [class.selected]="isSelected" [style.bottom.px]="-height" [style.line-height.px]="height" (dblclick)="onNoteControlDblClick($event)">
@@ -164,20 +166,22 @@ styles: `
         height: 100%;
         width: 5px;
         cursor: ew-resize;
-        background: rgba(255, 255, 255, 0.2);
         user-select: none;
         touch-action: none;
         z-index: 20;
         pointer-events: auto;
+        opacity: 0;
+
+        background-color: var(--c-g);
     }
 
     ::ng-deep .note .drag-handle:hover {
         width: 10px;
-        background: rgba(255, 255, 255, 0.6);
+        opacity: .6;
     }
 
     ::ng-deep .note .drag-handle:active {
-        background: rgba(255, 255, 255, 0.9);
+        opacity: .9;
     }
 
     ::ng-deep .note .drag-start {
