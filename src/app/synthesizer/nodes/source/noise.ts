@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType, Node } from '../node';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext';
 
@@ -42,7 +42,7 @@ export class Noise extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(volume?: number, frequency?: number, detune?: number) {
 
-        super('Noise', InstrumentType.MONO)
+        super(NodeName.Noise, InstrumentType.MONO)
 
         this.noise = new Tone.Noise()
         this.noise.start(Tone.getContext().currentTime)

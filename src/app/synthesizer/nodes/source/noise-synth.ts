@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType } from '../node';
 
 
@@ -60,7 +60,7 @@ export class NoiseSynth extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(options:any = {}) {
 
-        super('NoiseSynth', InstrumentType.POLY)
+        super(NodeName.NoiseSynth, InstrumentType.POLY)
 
         // @ts-ignore
         this.synth = new Tone.PolySynth(Tone.NoiseSynth)

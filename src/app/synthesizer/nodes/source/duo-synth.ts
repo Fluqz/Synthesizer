@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
 import { ParamType, Node } from '../node';
+import { NodeName } from '../../synthesizer';
 import { Frequency } from 'tone/build/esm/core/type/Units';
 
 
@@ -18,7 +19,7 @@ export class DuoSynth extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(options: any = {}) {
 
-        super('DuoSynth', InstrumentType.POLY)
+        super(NodeName.DuoSynth, InstrumentType.POLY)
 
         this.polySynth = new Tone.PolySynth(Tone.DuoSynth)
         this.output = this.polySynth

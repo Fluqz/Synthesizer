@@ -79,6 +79,13 @@ import { CommonModule } from '@angular/common';
 
                                     </div>
 
+
+                                    <div *ngIf="isDropdown(n.type)">
+                                        
+                                        <sy-curve-editor></sy-curve-editor>
+
+                                    </div>
+
                                 </div>
                                 
                             }
@@ -382,6 +389,7 @@ export class NodeComponent implements OnDestroy {
         this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
     }
 
+    isCurveEditor(type: ParamType) { return ParamType.CURVE_EDITOR == type }
     isDropdown(type: ParamType) { return ParamType.DROPDOWN == type }
     isKnob(type: ParamType) { return ParamType.KNOB == type }
     isSwitch(type: ParamType) { return ParamType.SWITCH == type }

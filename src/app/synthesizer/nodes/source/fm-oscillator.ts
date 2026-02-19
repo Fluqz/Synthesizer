@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType, Node } from '../node';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext';
 
@@ -60,7 +60,7 @@ export class FMOscillator extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(volume?: number, frequency?: number, detune?: number) {
 
-        super('FMOscillator', InstrumentType.MONO)
+        super(NodeName.FMOscillator, InstrumentType.MONO)
 
         this.osc = new Tone.FMOscillator(this.frequency)
         this.osc.start(Tone.getContext().currentTime)

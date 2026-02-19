@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType, Node } from '../node';
 import { G } from '../../../globals';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext';
@@ -45,7 +45,7 @@ export class Oscillator extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(volume?: number, frequency?: number, detune?: number) {
 
-        super('Oscillator', InstrumentType.MONO)
+        super(NodeName.Oscillator, InstrumentType.MONO)
 
         this.osc = new Tone.Oscillator(this.frequency)
         this.osc.start(Tone.getContext().currentTime)

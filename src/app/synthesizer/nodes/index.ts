@@ -12,6 +12,7 @@ export * from './effects/effect'
 export * from './effects/auto-filter'
 export * from './effects/phaser'
 export * from './effects/vibrato'
+export * from './effects/eq3'
 
 
 export * from './source/instrument'

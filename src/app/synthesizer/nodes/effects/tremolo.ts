@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from "./effect"
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -18,7 +19,7 @@ export class Tremolo extends Effect {
 
     constructor(wet, frequency, depth) {
 
-        super('Tremolo', wet)
+        super(NodeName.Tremolo, wet)
 
         this.tremolo = new Tone.Tremolo(this.frequency, this.depth)
 

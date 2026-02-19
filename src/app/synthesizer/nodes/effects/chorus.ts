@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect'
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -24,7 +25,7 @@ export class Chorus extends Effect {
 
     constructor(wet, frequency, delayTime, depth, feedback) {
 
-        super('Chorus', wet)
+        super(NodeName.Chorus, wet)
 
         this.chorus = new Tone.Chorus(this.frequency, this.delayTime, this.depth)
 

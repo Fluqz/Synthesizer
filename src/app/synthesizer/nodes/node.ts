@@ -7,6 +7,7 @@ export enum ParamType {
     KNOB = 'KNOB',
     DROPDOWN = 'DROPDOWN',
     SWITCH = 'SWITCH',
+    CURVE_EDITOR = 'SCURVE_EDITORH',
 }
 
 export type GroupID = number

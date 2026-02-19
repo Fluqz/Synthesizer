@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect'
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -18,7 +19,7 @@ export class Phaser extends Effect {
 
     constructor(wet) {
 
-        super('Phaser', wet)
+        super(NodeName.Phaser, wet)
 
         this.phaser = new Tone.Phaser()
 

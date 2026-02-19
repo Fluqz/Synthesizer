@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from "./effect"
+import { NodeName } from '../../synthesizer'
 import { ParamType, Node } from '../node'
 import { G } from '../../../globals';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext'
@@ -19,7 +20,7 @@ export class Delay extends Effect {
 
     constructor(wet, delayTime, feedback) {
 
-        super('Delay', wet)
+        super(NodeName.Delay, wet)
 
         this.feedbackDelay = new Tone.FeedbackDelay(this.delayTime, this.feedback)
 

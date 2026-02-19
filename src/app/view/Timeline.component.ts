@@ -314,6 +314,8 @@ export interface DragState {
     /** Height of a single note */
     noteHeight: number = 100
 
+    minNoteHeight: number = 25
+
     /** Height of the html wrapper of the timeline. */
     wrapperHeight: number = 100
 
@@ -1070,7 +1072,7 @@ export interface DragState {
     updateWrapperHeight() {
 
         if(this.rows < 3) return this.wrapperHeight = 100
-        return this.wrapperHeight = this.rows * 33
+        return this.wrapperHeight = this.rows * this.minNoteHeight
     }
 
     /**

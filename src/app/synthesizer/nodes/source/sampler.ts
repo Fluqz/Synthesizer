@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
+import { NodeName } from '../../synthesizer';
 import { ParamType } from '../node';
 import { DB } from './../../../core/db';
 import { G } from '../../../globals';
@@ -56,7 +57,7 @@ export class Sampler extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor() {
 
-        super('Sampler', InstrumentType.MONO)
+        super(NodeName.Sampler, InstrumentType.MONO)
 
         // this.gain = new Tone.Gain(this.volume)
 

@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType } from '../node';
 import { G } from '../../../globals';
 
@@ -64,7 +64,7 @@ export class Synth extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor() {
 
-        super('Synth', InstrumentType.MONO)
+        super(NodeName.Synth, InstrumentType.MONO)
 
         this.synth = new Tone.PolySynth(Tone.Synth)
         this.output = this.synth

@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType } from '../node';
 
 
@@ -49,7 +49,7 @@ export class MembraneSynth extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(options:any = {}) {
 
-        super('MembraneSynth', InstrumentType.POLY)
+        super(NodeName.MembraneSynth, InstrumentType.POLY)
 
         this.synth = new Tone.PolySynth(Tone.MembraneSynth)
         this.output = this.synth

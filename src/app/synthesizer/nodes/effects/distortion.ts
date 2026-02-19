@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect';
+import { NodeName } from '../../synthesizer';
 import { ParamType } from '../node';
 
 
@@ -13,7 +14,7 @@ export class Distortion extends Effect {
 
     constructor(wet, gain) {
 
-        super('Distortion', wet)
+        super(NodeName.Distortion, wet)
 
         this.distortion = new Tone.Distortion(this.gain)
 

@@ -1,6 +1,6 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
-import { Synthesizer } from '../../synthesizer';
+import { Synthesizer, NodeName } from '../../synthesizer';
 import { ParamType, Node } from '../node';
 import type { ToneWithContextOptions } from 'tone/build/esm/core/context/ToneWithContext';
 
@@ -51,7 +51,7 @@ export class PWMOscillator extends Instrument {
     /** freq, detune, volume, waveform,  */
     constructor(volume?: number, frequency?: number, detune?: number) {
 
-        super('PWMOscillator', InstrumentType.MONO)
+        super(NodeName.PWMOscillator, InstrumentType.MONO)
 
         this.osc = new Tone.PWMOscillator(this.frequency)
         this.osc.start(Tone.getContext().currentTime)

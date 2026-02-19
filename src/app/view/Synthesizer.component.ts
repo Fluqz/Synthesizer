@@ -3,7 +3,8 @@ import * as Tone from 'tone'
 import { Track } from '../synthesizer/track'
 import { Sequencer as _Sequencer, Sequencer } from '../synthesizer/sequencer'
 import { Node as _Node } from '../synthesizer/nodes/'
-import { Synthesizer, type Channel, type ComponentType } from '../synthesizer/synthesizer'
+import { Synthesizer, type Channel, type ComponentType, NodeName } from '../synthesizer/synthesizer'
+import type { Instrument } from '../synthesizer/nodes/source/instrument'
 import { BeatMachine } from '../synthesizer/beat-machine'
 import { G } from '../globals';
 import { Storage } from '../core/storage';
@@ -340,7 +341,7 @@ export class SynthesizerComponent implements AfterViewInit, AfterContentInit {
 
     addTrack() {
 
-        const t = new Track(this.synthesizer, Synthesizer.nodes.sources.Oscillator())
+        const t = new Track(this.synthesizer, Synthesizer.createNode(NodeName.Oscillator) as Instrument)
         this.synthesizer.addTrack(t)
 
         this.scrollToBottom()

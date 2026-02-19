@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect'
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -19,7 +20,7 @@ export class Reverb extends Effect {
 
     constructor(wet) {
 
-        super('Reverb', wet)
+        super(NodeName.Reverb, wet)
 
         this.reverb = new Tone.Reverb()
 

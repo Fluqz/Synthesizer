@@ -3,7 +3,7 @@
 import * as Tone from "tone"
 
 import { Track } from "../synthesizer/track";
-import { Synthesizer as Synth, type Channel } from "../synthesizer/synthesizer";
+import { Synthesizer as Synth, type Channel, NodeName } from "../synthesizer/synthesizer";
 import { Instrument, type Node as _Node } from "../synthesizer/nodes";
 
 import { Storage } from "../core/storage";
@@ -313,9 +313,10 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
      effects: string[]
 
      constructor(private cdr: ChangeDetectorRef) {
-
-         this.sources = Object.keys(Synth.nodes.sources)
-         this.effects = Object.keys(Synth.nodes.effects)
+          const effectNames = [NodeName.EQ3, NodeName.Delay, NodeName.Tremolo, NodeName.Distortion, NodeName.Chorus, NodeName.AutoFilter, NodeName.Reverb, NodeName.Phaser, NodeName.Vibrato]
+          
+          this.sources = Array.from(Synth.nodeRegistry.keys()).filter(k => !effectNames.includes(k as NodeName))
+          this.effects = effectNames as string[]
      }
 
      ngAfterViewInit() {
@@ -417,8 +418,7 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
 
         if(!this.effects.includes(name)) return
 
-        if(name != undefined) this.track.addNode(Synth.nodes.effects[name]())
-        else this.track.addNode(Synth.nodes.effects.Delay())
+        this.track.addNode(Synth.createNode(name))
 
         this.saveUndo()
     }
@@ -461,9 +461,9 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
 
         const source = ele.value
 
-        if(!Object.hasOwn(Synth.nodes.sources, source)) return
+        if(!Synth.nodeRegistry.has(source)) return
 
-        const instrument: Instrument = Synth.nodes.sources[source]()
+        const instrument: Instrument = Synth.createNode(source) as Instrument
 
         this.track.setInstrument(instrument)
 

@@ -5,12 +5,42 @@ import * as RxJs from 'rxjs'
 
 import { Key } from './key'
 
-import { Sampler, Synth, DuoSynth, Instrument, FMSynth, AMSynth, Delay, Tremolo, Reverb, Chorus, Distortion, Oscillator, Effect, AutoFilter, Phaser, Vibrato, FatOscillator, FMOscillator, AMOscillator, Noise, PWMOscillator, PulseOscillator, MembraneSynth, MonoSynth, PluckSynth, MetalSynth, GrainPlayer, NoiseSynth} from './nodes'
-
 import { Track, type ITrackSerialization } from './track'
 import { PresetManager, type IPreset } from '../core/preset-manager'
 import { Sequencer, type ISequencerSerialization } from './sequencer'
 import { G } from '../globals'
+import type { Instrument } from './nodes/source/instrument'
+import type { Effect } from './nodes/effects/effect'
+
+import { Vibrato } from './nodes/effects/vibrato'
+import { Tremolo } from './nodes/effects/tremolo'
+import { EQ3 } from './nodes/effects/eq3'
+import { Delay } from './nodes/effects/delay'
+import { Distortion } from './nodes/effects/distortion'
+import { Chorus } from './nodes/effects/chorus'
+import { AutoFilter } from './nodes/effects/auto-filter'
+import { Reverb } from './nodes/effects/reverb'
+import { Phaser } from './nodes/effects/phaser'
+import { Synth } from './nodes/source/synth'
+import { FMSynth } from './nodes/source/fm-synth'
+import { AMSynth } from './nodes/source/am-synth'
+import { DuoSynth } from './nodes/source/duo-synth'
+import { Oscillator } from './nodes/source/oscillator'
+import { PulseOscillator } from './nodes/source/pulse-oscillator'
+import { PWMOscillator } from './nodes/source/pwm-oscillator'
+import { AMOscillator } from './nodes/source/am-oscillator'
+import { FMOscillator } from './nodes/source/fm-oscillator'
+import { FatOscillator } from './nodes/source/fat-oscillator'
+import { Noise } from './nodes/source/noise'
+import { Sampler } from './nodes/source/sampler'
+import { MembraneSynth } from './nodes/source/membrane-synth'
+import { MonoSynth } from './nodes/source/mono-synth'
+import { PluckSynth } from './nodes/source/pluck-synth'
+import { MetalSynth } from './nodes/source/metal-synth'
+import { GrainPlayer } from './nodes/source/grain-player'
+import { NoiseSynth } from './nodes/source/noise-synth'
+
+
 
 export interface ISerialize<TSerialization extends ISerialization> {
 
@@ -39,6 +69,38 @@ export interface ISynthesizerSerialization extends ISerialization {
 }
 
 export type Channel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15
+
+export enum NodeName {
+    // Effects
+    EQ3 = 'EQ3',
+    Delay = 'Delay',
+    Tremolo = 'Tremolo',
+    Distortion = 'Distortion',
+    Chorus = 'Chorus',
+    AutoFilter = 'AutoFilter',
+    Reverb = 'Reverb',
+    Phaser = 'Phaser',
+    Vibrato = 'Vibrato',
+    // Sources
+    Synth = 'Synth',
+    FMSynth = 'FMSynth',
+    AMSynth = 'AMSynth',
+    DuoSynth = 'DuoSynth',
+    Oscillator = 'Oscillator',
+    PulseOscillator = 'PulseOscillator',
+    PWMOscillator = 'PWMOscillator',
+    AMOscillator = 'AMOscillator',
+    FMOscillator = 'FMOscillator',
+    FatOscillator = 'FatOscillator',
+    Noise = 'Noise',
+    Sampler = 'Sampler',
+    MembraneSynth = 'MembraneSynth',
+    MonoSynth = 'MonoSynth',
+    PluckSynth = 'PluckSynth',
+    MetalSynth = 'MetalSynth',
+    GrainPlayer = 'GrainPlayer',
+    NoiseSynth = 'NoiseSynth',
+}
 
 export type ComponentType = Track | Sequencer
 
@@ -87,47 +149,43 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     /** Max number of channels */
     static maxChannelCount: number = 16
 
-    /** Object to create nodes */
-    static nodes = {
-        effects: {
+    /** Factory registry for creating nodes */
+    static nodeRegistry = new Map<NodeName, () => any>([
+        // Effects
+        [NodeName.EQ3, () => new EQ3()],
+        [NodeName.Delay, () => new Delay(.5, .12, .8)],
+        [NodeName.Tremolo, () => new Tremolo(.5, 5, 1)],
+        [NodeName.Distortion, () => new Distortion(.5, .5)],
+        [NodeName.Chorus, () => new Chorus(.5, 4, 20, 1, 1)],
+        [NodeName.AutoFilter, () => new AutoFilter(.5)],
+        [NodeName.Reverb, () => new Reverb(.5)],
+        [NodeName.Phaser, () => new Phaser(.5)],
+        [NodeName.Vibrato, () => new Vibrato(.5)],
+        // Sources
+        [NodeName.Synth, () => new Synth()],
+        [NodeName.FMSynth, () => new FMSynth()],
+        [NodeName.AMSynth, () => new AMSynth()],
+        [NodeName.DuoSynth, () => new DuoSynth()],
+        [NodeName.Oscillator, () => new Oscillator()],
+        [NodeName.PulseOscillator, () => new PulseOscillator()],
+        [NodeName.PWMOscillator, () => new PWMOscillator()],
+        [NodeName.AMOscillator, () => new AMOscillator()],
+        [NodeName.FMOscillator, () => new FMOscillator()],
+        [NodeName.FatOscillator, () => new FatOscillator()],
+        [NodeName.Noise, () => new Noise()],
+        [NodeName.Sampler, () => new Sampler()],
+        [NodeName.MembraneSynth, () => new MembraneSynth()],
+        [NodeName.MonoSynth, () => new MonoSynth()],
+        [NodeName.PluckSynth, () => new PluckSynth()],
+        [NodeName.MetalSynth, () => new MetalSynth()],
+        [NodeName.GrainPlayer, () => new GrainPlayer()],
+        [NodeName.NoiseSynth, () => new NoiseSynth()],
+    ])
 
-            Delay: () => { return new Delay(.5, .12, .8) },
-            Tremolo: () => { return new Tremolo(.5, 5, 1) },
-            Distortion: () => { return new Distortion(.5, .5) },
-            Chorus: () => { return new Chorus(.5, 4, 20, 1, 1) },
-            AutoFilter: () => { return new AutoFilter(.5) },
-            Reverb: () => { return new Reverb(.5) },
-            Phaser: () => { return new Phaser(.5) },
-            Vibrato: () => { return new Vibrato(.5) },
-        },
-        sources: {
-	
-            Synth: () => { return new Synth() },
-            FMSynth: () => { return new FMSynth() },
-            AMSynth: () => { return new AMSynth() },
-            DuoSynth: () => { return new DuoSynth() },
-            Oscillator: () => { return new Oscillator() },
-            PulseOscillator: () => { return new PulseOscillator() },
-            PWMOscillator: () => { return new PWMOscillator() },
-            AMOscillator: () => { return new AMOscillator() },
-            FMOscillator: () => { return new FMOscillator() },
-            FatOscillator: () => { return new FatOscillator() },
-            Noise: () => { return new Noise() },
-            Sampler: () => { return new Sampler() },
-            MembraneSynth: () => { return new MembraneSynth() },
-            MonoSynth: () => { return new MonoSynth() },
-            PluckSynth: () => { return new PluckSynth() },
-            MetalSynth: () => { return new MetalSynth() },
-            GrainPlayer: () => { return new GrainPlayer() },
-            NoiseSynth: () => { return new NoiseSynth() },
-        }
-    }
+    static createNode(name: NodeName | string): Instrument | Effect | null {
 
-    static createNode(name: string) {
-
-        if(Synthesizer.nodes.sources[name]) return Synthesizer.nodes.sources[name]() as Instrument
-        if(Synthesizer.nodes.effects[name]) return Synthesizer.nodes.effects[name]() as Effect
-        return null
+        const creator = Synthesizer.nodeRegistry.get(name as NodeName)
+        return creator?.() ?? null
     }
 
     /** Array of created Key objects */
@@ -135,8 +193,16 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
     
     /** Octave number */
     octave: number
+
     /** ToneJs Volume Node as Master Volume */
     volume: Tone.Volume
+
+    /** ToneJs Limiter Node as Master Volume */
+    limmiter: Tone.Limiter
+
+    /** ToneJs EQ3 Node as Master Volume */
+    eq: Tone.EQ3
+
     /** Arpeggiator Tone.Pattern */
     arp: Tone.Pattern<string>
     /** Arpeggiator array */
@@ -186,10 +252,18 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
 
         this.bpm = 120
         this.octave = 2
-        
+
+        // Master Limiter
+        this.limmiter = new Tone.Limiter(-5)
+        this.limmiter.toDestination()
+
         // Synthesizer Master Volume
         this.volume = new Tone.Volume(this.default_volume)
-        this.volume.toDestination()
+        this.volume.connect(this.limmiter)
+
+        // Master EQ
+        this.eq = new Tone.EQ3()
+        this.eq.connect(this.volume)
 
         this.isRecording = false
         this.components = []
@@ -223,7 +297,7 @@ export class Synthesizer implements ISerialize<ISynthesizerSerialization> {
         }
 
         this.tracks = []
-        this.addTrack(new Track(this, Synthesizer.nodes.sources.Oscillator()))
+        this.addTrack(new Track(this, Synthesizer.createNode(NodeName.Oscillator) as Instrument))
 
         this.sequencers = []
         // this.addSequencer(new Sequencer(this, ['F#2', 'D1', 'F#2', 'C#3']))

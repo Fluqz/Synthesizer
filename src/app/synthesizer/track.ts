@@ -1,5 +1,5 @@
 import * as Tone from 'tone'
-import { Synthesizer, type ISerialization, type ISerialize, type Channel, type IComponent } from "./synthesizer"
+import { Synthesizer, type ISerialization, type ISerialize, type Channel, type IComponent, NodeName } from "./synthesizer"
 import { Node, type INodeSerialization } from './nodes/node'
 import { InstrumentType, type Instrument, Delay } from './nodes'
 import { Util } from '../util/util'
@@ -103,14 +103,14 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             this.connectNodes()
         }
 
-        // this.addNode(Synthesizer.nodes.effects.Reverb())
-        // this.addNode(Synthesizer.nodes.effects.Delay())
-        // this.addNode(Synthesizer.nodes.effects.AutoFilter())
-        // this.addNode(Synthesizer.nodes.effects.Phaser())
-        // this.addNode(Synthesizer.nodes.effects.Chorus())
-        // this.addNode(Synthesizer.nodes.effects.Distortion())
-        // this.addNode(Synthesizer.nodes.effects.Tremolo())
-        // this.addNode(Synthesizer.nodes.effects.Vibrato())
+        // this.addNode(Synthesizer.createNode(NodeName.Reverb))
+        // this.addNode(Synthesizer.createNode(NodeName.Delay))
+        // this.addNode(Synthesizer.createNode(NodeName.AutoFilter))
+        // this.addNode(Synthesizer.createNode(NodeName.Phaser))
+        // this.addNode(Synthesizer.createNode(NodeName.Chorus))
+        // this.addNode(Synthesizer.createNode(NodeName.Distortion))
+        // this.addNode(Synthesizer.createNode(NodeName.Tremolo))
+        // this.addNode(Synthesizer.createNode(NodeName.Vibrato))
     }
 
     /** Get the track count/order number */

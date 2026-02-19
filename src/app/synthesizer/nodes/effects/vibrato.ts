@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect'
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -19,7 +20,7 @@ export class Vibrato extends Effect {
 
     constructor(wet) {
 
-        super('Vibrato', wet)
+        super(NodeName.Vibrato, wet)
 
         this.vibrato = new Tone.Vibrato()
 

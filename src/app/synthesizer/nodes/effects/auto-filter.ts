@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 
 import { Effect } from './effect'
+import { NodeName } from '../../synthesizer'
 import { ParamType } from '../node'
 
 
@@ -19,7 +20,7 @@ export class AutoFilter extends Effect {
 
     constructor(wet) {
 
-        super('AutoFilter', wet)
+        super(NodeName.AutoFilter, wet)
 
         this.autoFilter = new Tone.AutoFilter()
         this.autoFilter.start()
