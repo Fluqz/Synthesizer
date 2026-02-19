@@ -461,7 +461,7 @@ export class TrackComponent implements AfterViewInit, OnDestroy {
 
         const source = ele.value
 
-        if(!Synth.nodeRegistry.has(source)) return
+        if(!Synth.nodeRegistry.has(source as NodeName)) return
 
         const instrument: Instrument = Synth.createNode(source) as Instrument
 
