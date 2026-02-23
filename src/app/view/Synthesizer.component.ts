@@ -37,9 +37,9 @@ import { Key } from '../synthesizer/key'
 
         <div class="synthesizer-menu">
 
-            <div class="add-track btn" title="Add Track" (click)="addTrack()">&#x2b;</div>
+            <div class="add-track btn" title="Add Track" (click)="addTrack()">&#x2b;T</div>
 
-            <div class="add-sequencer btn" title="Add Sequencer" (click)="addSequencer()">&#x2b;</div>
+            <div class="add-sequencer btn" title="Add Sequencer" (click)="addSequencer()">&#x2b;S</div>
 
             <div class="toggle-sequencers btn" [class.active]="areSequencersPlaying" title="Play / Stop all Sequencers" (click)="toggleSequencersPlayStop()">{{ areSequencersPlaying ? '⏸' : '▶' }}</div>
 

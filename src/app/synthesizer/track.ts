@@ -268,7 +268,10 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
     /** Releases all triggered notes */
     releaseNotes() {
 
-        if(this.instrument) this.instrument.releaseAll()
+        // Don't release held notes
+        if(this.hold !== 'HOLD' && this.hold !== 'PLAY') {
+            if(this.instrument) this.instrument.releaseAll()
+        }
         
         for(let n of this.activeNotes) this.triggerRelease(n, Tone.getContext().currentTime)
 
@@ -541,22 +544,19 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         if(o.isMuted) this.mute(o.isMuted)
         if(o.soloEnabled) this.solo(o.soloEnabled)
-        if(o.hold) {
+        
+        // Restore hold state AFTER instrument and nodes are fully initialized
+        if(o.hold && o.hold.enabled == 'HOLD' && o.hold.activeKeys && o.hold.activeKeys.length > 0) {
 
-            this.hold = o.hold.enabled
-            
-            if(this.hold != 'OFF') {
+            // Temporarily set hold to OFF to allow triggerAttack to work
+            this._hold = 'PLAY'
+            for(let k of o.hold.activeKeys) {
 
-                this.hold = 'PLAY'
-
-                console.log('PLAY HOLD ', o.hold.activeKeys)
-                for(let k of o.hold.activeKeys) {
-
-                    this.triggerAttack(k, Tone.getContext().currentTime)
-                }
-
-                this.hold = 'HOLD'
+                this.triggerAttack(k, Tone.getContext().currentTime)
             }
+
+            // Finally transition to HOLD
+            this.hold = 'HOLD'
         }
     }
 
@@ -581,8 +581,8 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
             soloEnabled: this.soloEnabled,
             hold: {
-                enabled: this.hold,
-                activeKeys: Array.from(this.holdModeNotes as Iterable<string>)
+                enabled: (this.hold == 'HOLD' || this.hold == 'PLAY') ? 'HOLD' : 'OFF',
+                activeKeys: this.holdModeNotes.size > 0 ? Array.from(this.holdModeNotes as Iterable<string>) : null
             },
             isMuted: this.isMuted,
 

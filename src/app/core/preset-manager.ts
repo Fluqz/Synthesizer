@@ -34,7 +34,6 @@ export class PresetManager {
           this.defaultPresetNames = new Set()
 
           // Initialize default preset (uses negative ID to avoid collisions)
-          // @ts-ignore - DEFAULT_SESSION type mismatch
           this.default = {
               id: -1,
               name: 'default',

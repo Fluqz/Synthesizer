@@ -237,12 +237,7 @@ export const DEFAULT_SESSION: IAppSerialization = {
                 "soloEnabled": false,
                 "hold": {
                     "enabled": "OFF",
-                    "activeKeys": [
-                        "A#1",
-                        "D#2",
-                        "F#2",
-                        "F#1"
-                    ]
+                    "activeKeys": []
                 },
                 "isMuted": false,
                 "isCollapsed": false
