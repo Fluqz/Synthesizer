@@ -76,6 +76,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
                 When HOLD, all notes that are playing from activating them in the PLAY mode, will continue playing, but no other notes can be activated anymore.
                 When OFF, deactivates all actively playing notes. Has no other effect.
 
+                HOLD Mode Notes are also triggered by sequencers. Stop all sources before
             </div>
 
             <div class="h-4">Duplicate Button</div>
@@ -98,8 +99,9 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
                 <div class="text-1">All tracks have a source instrument. This can be a several Oscillator, Prebuild Synthesizers, a Sampler or Noise.</div>
 
                 <div class="h-4">Sequencer</div>
-                <div class="text-1">Sequencers will let you play notes or samples automatically. </div>
-                <div class="text-1">You can build chains of notes to make a melody or a drum beat.</div>
+                <div class="text-1">The Sequencers will play notes or samples for you automatically. </div>
+                <div class="text-1">You can draw Notes into the Timeline to make a melody or a drum beat.</div>
+                <div class="text-1">Add, resize and remove notes. Change the Note and Octave that is being played. When Playing a key before adding a Note, the played Note is taken for the new Note. That helps creating fast melodies.</div>
 
 
                 <div class="h-4">Synth</div>

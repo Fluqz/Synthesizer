@@ -26,6 +26,8 @@ export interface IAppSerialization extends ISerialization {
     version: string,
     animationEnabled: boolean
     visualsEnabled: boolean
+    visualsFPS: number
+    OscilloscopeFPS: number
     pauseOnLeaveWindow: boolean
     showKeyboard: boolean
 }
@@ -258,8 +260,6 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
         //     })
 
         // }, 1500)
-
-
     }
 
     ngOnDestroy() {
@@ -405,6 +405,8 @@ export class AppComponent implements AfterViewInit, AfterContentInit, OnDestroy{
             visualsEnabled: G.visualsEnabled,
             pauseOnLeaveWindow: G.pauseOnLeaveWindow,
             showKeyboard: G.showKeyboard,
+            visualsFPS: G.visualsFPS,
+            OscilloscopeFPS: G.OscilloscopeFPS,
 
             synthesizer: this.synthesizer.serializeOut(),
         }

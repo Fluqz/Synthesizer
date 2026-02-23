@@ -1,13 +1,14 @@
 import { Subject, count } from 'rxjs'
 import * as Tone from 'tone'
 import type { ISerialization, ISerialize } from '../synthesizer'
+import { EQ3 } from './effects/eq3'
 
 export enum ParamType {
 
     KNOB = 'KNOB',
     DROPDOWN = 'DROPDOWN',
     SWITCH = 'SWITCH',
-    CURVE_EDITOR = 'SCURVE_EDITORH',
+    EQ3_EDITOR = 'EQ3_EDITOR',
 }
 
 export type GroupID = number
@@ -53,7 +54,12 @@ export interface SwitchNodeParameter extends NodeParameter {
     enabled: boolean
 }
 
-export type NodeParameterType = KnobNodeParameter | SwitchNodeParameter | DropDownNodeParameter
+export interface EQ3EditorParameter extends NodeParameter {
+
+    instance: EQ3
+}
+
+export type NodeParameterType = KnobNodeParameter | SwitchNodeParameter | DropDownNodeParameter | EQ3EditorParameter
 
 export interface INodeSerialization extends ISerialization {
 
@@ -213,6 +219,7 @@ export abstract class Node/* extends Tone.ToneAudioNode*/ implements ISerialize<
 
     serializeIn(o : INodeSerialization) {
 
+        console.log('NODE', o.enabled)
         if(o.name) this.name = o.name
         if(o.enabled) this.enabled = o.enabled
         if(o.collapsed) this.collapsed = o.collapsed

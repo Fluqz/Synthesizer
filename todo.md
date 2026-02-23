@@ -1,7 +1,15 @@
 #BUGS
 
 
-getter values that are used by knobs are called constantly!! All of the nodes are used like that
+HOLD MODE only starting on reload, not on duplication or pause/start
+HOLD MODE STOPS ON PAUSE?
+Sampler cannot change sample
+Check MetalSynth, PLucksynth for correct tonejs instance
+Timeline notes can overlap the end of the timeline
+EQ3 Component
+
+LAGGING!!?
+
 
 Add enabled button for each track E M S 
 
@@ -10,21 +18,12 @@ Add button to stop all animations!!!
   gifs
   visual?
 
-Replace SVG animations with canvas stuff
-
-clear sequencer button
 
 knob lowest value is 0.1 attack
 
 Make adsr release till endless
 
 Removing samples is hard. Feeling is bad
-
-UI not updating after adding/removing Effects
-
-Sequencer.isPlaying is not Reactive when starting all 
-
-Add track octave shift!
 
 There are many places where for example serializeIn will overwrite the ToneJs Source or Effect instance without destroying the object correctly!
 
@@ -39,22 +38,9 @@ redo/undo not working soo well. Too many saves on knob change (debounce?)
 
 upload file as sample and save in browser db
 
-Volume vs Gain
-
 Arpeggiator in Synth and per Track
 
-Global Play / Stop button
-
-Menu styling and text
-
 Epilepsy warning on welcome
-
-Save Menu Options in LocalStorage too
-  Also save visual
-
-Timeline line is not synced with Transport time
-
-Keys are terrible
 
 Make keybinding class?
 
@@ -64,7 +50,7 @@ Midi access - Firefox
 
 implement more synths, oscs and effects
 
-Disable Visuals completly remove() in p5 sketch
+
 
 
 

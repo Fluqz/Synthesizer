@@ -212,9 +212,8 @@ export class GrainPlayer extends Instrument {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.volume != undefined) this.volume = o.volume
-
+        
         if(o.detune != undefined) this.volume = o.volume
         if(o.portamento != undefined) this.volume = o.volume
         if(o.harmonicity != undefined) this.volume = o.volume
@@ -223,6 +222,8 @@ export class GrainPlayer extends Instrument {
         if(o.decay != undefined) this.volume = o.volume
         if(o.sustain != undefined) this.volume = o.volume
         if(o.release != undefined) this.volume = o.volume
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {

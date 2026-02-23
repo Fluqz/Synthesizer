@@ -31,6 +31,9 @@ export class G {
 
     static visualsEnabled: boolean = true
 
+    static visualsFPS: number = 10
+    static OscilloscopeFPS: number = 30
+
     static pauseOnLeaveWindow: boolean = true
 
     static showKeyboard: boolean = true

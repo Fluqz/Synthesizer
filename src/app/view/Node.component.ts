@@ -33,7 +33,7 @@ import { CommonModule } from '@angular/common';
 
                 <div class="toggle-shrink-btn" (click)="toggleCollapse()"></div>
                     
-                <div *ngIf="isEffect" class="enabled-btn" (click)="enable()" [class.enabled]="isEnabled"></div>
+                <div *ngIf="!isInstrument" class="enabled-btn" (click)="enable()" [class.enabled]="node.enabled"></div>
             
                 <div *ngIf="!isInstrument" class="delete" (click)="onDelete()">&#x2715;</div>
 
@@ -80,9 +80,9 @@ import { CommonModule } from '@angular/common';
                                     </div>
 
 
-                                    <div *ngIf="isDropdown(n.type)">
+                                    <div *ngIf="isCurveEditor(n.type)">
                                         
-                                        <sy-curve-editor></sy-curve-editor>
+                                        <sy-eq3-editor [eq]="n.instance" (change)="onEQChange(e$event)"></sy-eq3-editor>
 
                                     </div>
 
@@ -328,7 +328,6 @@ export class NodeComponent implements OnDestroy {
         this._node = node
 
         this.isInstrument= node instanceof Instrument ? true : false
-        this.isEffect = node instanceof Effect ? true : false
 
         this.nodeParameters = [ ...this._node.props.values() ]
         this.updateGroups()
@@ -349,10 +348,6 @@ export class NodeComponent implements OnDestroy {
     private throttleChange
 
     isInstrument: boolean
-    isEffect: boolean
-
-    isEnabled: boolean = true
-    wet: number
 
     constructor() {
     }
@@ -383,13 +378,18 @@ export class NodeComponent implements OnDestroy {
         return groups
     }
 
+    onEQChange(e) {
+
+        console.log('EQ CHANGE', e)
+    }
+
     /** Sets the groups array with grouped note parameters. */
     updateGroups() {
 
         this.groups = Array.from(this.groupNodeParameter(this.nodeParameters).values())
     }
 
-    isCurveEditor(type: ParamType) { return ParamType.CURVE_EDITOR == type }
+    isCurveEditor(type: ParamType) { return ParamType.EQ3_EDITOR == type }
     isDropdown(type: ParamType) { return ParamType.DROPDOWN == type }
     isKnob(type: ParamType) { return ParamType.KNOB == type }
     isSwitch(type: ParamType) { return ParamType.SWITCH == type }
@@ -457,17 +457,11 @@ export class NodeComponent implements OnDestroy {
 
     enable() {
 
-        if(!this.isInstrument) return
+        if(this.isInstrument) return
 
         this.saveUndo()
 
-        const e = (this.node as Effect)
-
-        if(this.isEnabled) this.wet = e.wet
-
-        this.isEnabled = !this.isEnabled
-
-        e.wet = this.isEnabled ? this.wet : 0
+        this.node.enabled = !this.node.enabled
     }
 
     saveUndo() {

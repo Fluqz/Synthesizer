@@ -96,14 +96,14 @@ export class Vibrato extends Effect {
 
         super.serializeIn(o)
         
-        if(o.enabled != undefined) this.enabled = o.enabled
-
         if(o.wet != undefined) this.wet = o.wet
         if(o.depth != undefined) this.depth = o.depth
         if(o.maxDelay != undefined) this.maxDelay = o.maxDelay
         if(o.wave != undefined) this.wave = o.wave
         if(o.wavePartial != undefined) this.wavePartial = o.wavePartial
         if(o.frequency != undefined) this.frequency = o.frequency
+
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -113,10 +113,7 @@ export class Vibrato extends Effect {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
 
-            wet: this.wet,
             depth: this.depth,
             maxDelay: this.maxDelay,
             wave: this.wave,

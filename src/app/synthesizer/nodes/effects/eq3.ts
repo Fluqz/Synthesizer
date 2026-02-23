@@ -2,7 +2,7 @@ import * as Tone from 'tone'
 
 import { Effect } from './effect'
 import { NodeName } from '../../synthesizer'
-import { ParamType } from '../node'
+import { EQ3EditorParameter, NodeParameterType, ParamType } from '../node'
 
 
 
@@ -11,19 +11,20 @@ export class EQ3 extends Effect {
 
 
     get wet(): any {
-        throw new Error('Method not implemented.')
+        return 0
     }
     set wet(w: any) {
-        throw new Error('Method not implemented.')
     }
 
     public eq: Tone.EQ3
     
     _highFrequency: Tone.Unit.Frequency
-    _high: Tone.Unit.Frequency
-    _mid: Tone.Unit.Frequency
-    _low: Tone.Unit.Frequency
+    _high: number
+    _mid: number
+    _low: number
     _lowFrequency: Tone.Unit.Frequency
+    _q: number
+
 
     constructor() {
 
@@ -38,13 +39,27 @@ export class EQ3 extends Effect {
         this._mid = this.eq.get().mid
         this._highFrequency = this.eq.get().highFrequency
         this._high = this.eq.get().high
+        // this._q = this.eq.get()['Q']
+        
+        this.props.set('EQ3Editor', { type: ParamType.EQ3_EDITOR, name: '', instance: this, get: () =>  this.mid, set: (e) => this.mid = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
 
-        this.props.set('mid', { type: ParamType.CURVE_EDITOR, name: 'Mid', get: () =>  this.mid, set: (e) => this.mid = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
-        this.props.set('high', { type: ParamType.CURVE_EDITOR, name: 'High', get: () =>  this.high, set: (e) => this.high = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
-        this.props.set('low', { type: ParamType.CURVE_EDITOR, name: 'Low', get: () =>  this.low, set: (e) => this.low = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
-        this.props.set('lowFrequency', { type: ParamType.CURVE_EDITOR, name: 'LowFrequency', get: () =>  this.lowFrequency, set: (e) => this.lowFrequency = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
-        this.props.set('highFrequency', { type: ParamType.CURVE_EDITOR, name: 'highFrequency', get: () =>  this.highFrequency, set: (e) => this.highFrequency = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+
+        // this.props.set('mid', { type: ParamType.EQ3_EDITOR, name: 'Mid', get: () =>  this.mid, set: (e) => this.mid = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        // this.props.set('high', { type: ParamType.EQ3_EDITOR, name: 'High', get: () =>  this.high, set: (e) => this.high = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        // this.props.set('low', { type: ParamType.EQ3_EDITOR, name: 'Low', get: () =>  this.low, set: (e) => this.low = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        // this.props.set('lowFrequency', { type: ParamType.EQ3_EDITOR, name: 'LowFrequency', get: () =>  this.lowFrequency, set: (e) => this.lowFrequency = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+        // this.props.set('highFrequency', { type: ParamType.EQ3_EDITOR, name: 'highFrequency', get: () =>  this.highFrequency, set: (e) => this.highFrequency = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
+
+        // this.props.set('q', { type: ParamType.EQ3_EDITOR, name: 'q', get: () =>  this.q, set: (e) => this.q = e, min: 0, max: 1, step: 0.01, precision: 2, groupID: 0 })
     }
+
+    // get q() { return this._q }
+    // set q(w: any) {
+
+    //     this._q = w
+
+    //     this.eq.set({ Q: this._q as number })
+    // }
 
     get mid() { return this._mid }
     set mid(w: any) {
@@ -90,13 +105,13 @@ export class EQ3 extends Effect {
 
         super.serializeIn(o)
 
-        if(o.enabled != undefined) this.enabled = o.enabled
-
         if(o.mid != undefined) this.mid = o.mid
         if(o.low != undefined) this.low = o.low
         if(o.high != undefined) this.high = o.high
         if(o.highFrequency != undefined) this.highFrequency = o.highFrequency
         if(o.lowFrequency != undefined) this.lowFrequency = o.lowFrequency
+
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {

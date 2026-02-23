@@ -22,8 +22,18 @@ import { PresetManager } from "../core/preset-manager"
         </div>
 
         <div class="option"> 
-            <div class="h-4">Disable visuals</div>
+            <div class="h-4">Enable visuals</div>
             <div class="btn text-1" (click)="toggleVisualsEnabled()">{{ visualsEnabled ? 'ON' : 'OFF' }}</div>
+        </div>
+
+        <div class="option"> 
+            <div class="h-4">Visuals max. FPS</div>
+            <div class="btn text-1"></div>
+        </div>
+
+        <div class="option"> 
+            <div class="h-4">Oscilloscope max. FPS</div>
+            <div class="btn text-1"></div>
         </div>
 
         <div class="option"> 

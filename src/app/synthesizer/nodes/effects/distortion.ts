@@ -47,9 +47,10 @@ export class Distortion extends Effect {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.wet != undefined) this.wet = o.wet
         if(o.gain != undefined) this.gain = o.gain
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -60,9 +61,6 @@ export class Distortion extends Effect {
 
             ...no,
 
-            name: this.name,
-            enabled: this.enabled,
-            wet: this.wet,
             gain: this.gain
         }
     }

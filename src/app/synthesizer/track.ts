@@ -78,6 +78,9 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
     /** Map to keep track of all active/triggered notes. */
     public activeNotes: Set<Tone.Unit.Frequency> = new Set()
 
+    /** Map to keep track of all active/triggered notes. */
+    public holdModeNotes: Set<Tone.Unit.Frequency> = new Set()
+
 
     constructor(synthesizer: Synthesizer, instrument?: Instrument) {
 
@@ -237,6 +240,9 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         this._hold = hold
 
+        console.log('set hold mode',this.id, hold)
+        console.trace()
+
         if(hold == 'PLAY') {
 
 
@@ -246,6 +252,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
         }
         else { // OFF
 
+            this.holdModeNotes.clear()
             this.releaseNotes()
         }
     }
@@ -284,6 +291,13 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
         let triggerNote = this.applyOctaveOffset(note)
 
+        if(this.hold == 'PLAY') {
+
+            if(this.instrument.type == InstrumentType.MONO) this.holdModeNotes.clear()
+
+            this.holdModeNotes.add(triggerNote)
+        }
+
         if(this.instrument.type == InstrumentType.MONO) this.activeNotes.clear()
 
         this.activeNotes.add(triggerNote)
@@ -312,7 +326,6 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
             Synthesizer.activeNotes.delete(triggerNote)
 
-        // }, time)
         }, Tone.Time(time).toSeconds() + Tone.Time(duration).toSeconds())
 
         this.instrument.triggerAttackRelease(triggerNote, duration, time, velocity)
@@ -329,6 +342,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             console.error('track.ts releaseNotes() - instrument is undefined')
             return
         }
+
         // Prevent triggering while in HOLD Mode. Held sounds are already set 
         if(this.hold == 'HOLD' || this.hold == 'PLAY') return
 
@@ -535,6 +549,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
 
                 this.hold = 'PLAY'
 
+                console.log('PLAY HOLD ', o.hold.activeKeys)
                 for(let k of o.hold.activeKeys) {
 
                     this.triggerAttack(k, Tone.getContext().currentTime)
@@ -567,7 +582,7 @@ export class Track implements ISerialize<ITrackSerialization>, IComponent {
             soloEnabled: this.soloEnabled,
             hold: {
                 enabled: this.hold,
-                activeKeys: Array.from(this.activeNotes as Iterable<string>)
+                activeKeys: Array.from(this.holdModeNotes as Iterable<string>)
             },
             isMuted: this.isMuted,
 

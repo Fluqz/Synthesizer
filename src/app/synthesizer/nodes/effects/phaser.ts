@@ -91,9 +91,7 @@ export class Phaser extends Effect {
     override serializeIn(o) {
 
         super.serializeIn(o)
-
-        if(o.enabled != undefined) this.enabled = o.enabled
-
+        
         if(o.wet != undefined) this.wet = o.wet
         if(o.octaves != undefined) this.octaves = o.octaves
         if(o.baseFrequency != undefined) this.baseFrequency = o.baseFrequency
@@ -101,6 +99,8 @@ export class Phaser extends Effect {
         if(o.Q != undefined) this.Q = o.Q
         // @ts-ignore
         if(o.stages != undefined) this.stages = o.stages
+
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -111,10 +111,6 @@ export class Phaser extends Effect {
 
             ...no,
 
-            name: this.name,
-            enabled: this.enabled,
-
-            wet: this.wet,
             octaves: this.octaves,
             baseFrequency: this.baseFrequency,
             frequency: this.frequency,

@@ -62,10 +62,11 @@ export class Tremolo extends Effect {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.wet != undefined) this.wet = o.wet
         if(o.frequency != undefined) this.frequency = o.frequency
         if(o.depth != undefined) this.depth = o.depth
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -75,9 +76,6 @@ export class Tremolo extends Effect {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
-            wet: this.wet,
             frequency: this.frequency,
             depth: this.depth
         }

@@ -105,8 +105,7 @@ export class AutoFilter extends Effect {
 
         super.serializeIn(o)
 
-        if(o.enabled != undefined) this.enabled = o.enabled
-
+        
         if(o.wet != undefined) this.wet = o.wet
         if(o.depth != undefined) this.depth = o.depth
         if(o.octaves != undefined) this.octaves = o.octaves
@@ -114,6 +113,8 @@ export class AutoFilter extends Effect {
         if(o.wavePartial != undefined) this.wavePartial = o.wavePartial
         if(o.baseFrequency != undefined) this.baseFrequency = o.baseFrequency
         if(o.frequency != undefined) this.frequency = o.frequency
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -123,10 +124,6 @@ export class AutoFilter extends Effect {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
-
-            wet: this.wet,
             depth: this.depth,
             octaves: this.octaves,
             wave: this.wave,

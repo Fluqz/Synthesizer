@@ -158,8 +158,7 @@ export class DuoSynth extends Instrument {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
-
+        
         if(o.volume != undefined) this.volume = o.volume
         if(o.detune != undefined) this.detune = o.detune
         if(o.harmonicity != undefined) this.harmonicity = o.harmonicity
@@ -174,6 +173,8 @@ export class DuoSynth extends Instrument {
         if(o.decay1 != undefined) this.decay1 = o.decay1
         if(o.release1 != undefined) this.release1 = o.release1
         if(o.sustain1 != undefined) this.sustain1 = o.sustain1
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {

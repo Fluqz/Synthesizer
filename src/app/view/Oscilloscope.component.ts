@@ -1,27 +1,21 @@
 
 import * as Tone from "tone";
 import { Component, ChangeDetectionStrategy, ElementRef, Input, ViewChild, Renderer2 } from "@angular/core"
+import { G } from "../globals";
 
 
 @Component({
 
   selector: 'sy-oscilloscope',
   standalone: true,
-  // changeDetection: ChangeDetectionStrategy.OnPush,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     
   <div id="oscilloscope" title="Oscilloscope" #container>
 
       <svg xmlns="http://www.w3.org/2000/svg" width="100" height="50" preserveAspectRatio="none">
 
-        <!-- MAKES IT SINGLETON SOMEHOW. ALL WAVES LOOK THE SAME -->
-          <!-- <defs> -->
             <polyline id="wave" stroke="#fed33a" stroke-width="1px" [attr.points]="pointsString" />
-          <!-- </defs> -->
-    
-          <!-- <use href="#wave" x="0"  y="0"/> -->
-          <!-- <use href="#wave" x="0"  y="-5" style="opacity: .2" /> -->
-          <!-- <use href="#wave" x="0"  y="5" style="opacity: .2" /> -->
 
       </svg>
 
@@ -44,8 +38,6 @@ import { Component, ChangeDetectionStrategy, ElementRef, Input, ViewChild, Rende
 
 })
 export class OscilloscopeComponent {
-
-  constructor(private renderer: Renderer2) {}
 
   @ViewChild('container') 
   private _container: ElementRef<HTMLElement>
@@ -87,6 +79,14 @@ export class OscilloscopeComponent {
   public w = 100
   public h = 50
 
+  private lastFrameTime: number = 0
+  private targetFps: number = 30
+
+  constructor(private renderer: Renderer2) {
+
+    this.targetFps = G.OscilloscopeFPS
+  }
+
   draw = () => {
 
     if (this.active) {
@@ -97,9 +97,6 @@ export class OscilloscopeComponent {
         
         if(this.container == null) return
 
-        this.w = this.container.clientWidth
-        this.h = this.container.clientHeight
-        
         var sliceWidth = this.w / this.bufferLength
         var x = 0
         var points = []
@@ -142,9 +139,16 @@ export class OscilloscopeComponent {
     if(this.animationFrameID != undefined) cancelAnimationFrame(this.animationFrameID)
 
     const update = () => {
-      this.draw()
+      const now = performance.now()
+      const frameInterval = 1000 / this.targetFps
+      
+      if (now - this.lastFrameTime >= frameInterval) {
+        this.draw()
+        this.lastFrameTime = now
+      }
       this.animationFrameID = requestAnimationFrame(update)
     }
+
     this.animationFrameID = requestAnimationFrame(update)
     
     this.connectedOuput = this.output
@@ -175,6 +179,7 @@ export class OscilloscopeComponent {
       this.connect()
     }
   }
+
 
   ngOnDestroy() {
 

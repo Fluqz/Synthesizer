@@ -41,6 +41,7 @@ export class Delay extends Effect {
     get wet() { return this._wet }
     set wet(w: number) {
 
+        console.log('wet', w)
         this._wet = w
         const now = Tone.getContext().currentTime
         this.feedbackDelay.wet.linearRampToValueAtTime(this._wet, now + G.AUDIO_RAMP_DURATION)
@@ -90,10 +91,12 @@ export class Delay extends Effect {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.wet != undefined) this.wet = o.wet
         if(o.delayTime != undefined) this.delayTime = o.delayTime
         if(o.feedback != undefined) this.feedback = o.feedback
+
+        if(o.enabled != undefined) this.enabled = o.enabled
+        console.log('delay', o.enabled, this.enabled)
     }
 
     override serializeOut() {
@@ -103,9 +106,6 @@ export class Delay extends Effect {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
-            wet: this.wet,
             delayTime: this.delayTime,
             feedback: this.feedback,
         }

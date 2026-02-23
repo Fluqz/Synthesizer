@@ -286,9 +286,8 @@ export class OmniOscillator extends Instrument {
         super.serializeIn(o)
         
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.volume != undefined) this.volume = o.volume
-
+        
         if(o.harmonicity != undefined) this.harmonicity = o.harmonicity
         if(o.modulationIndex != undefined) this.modulationIndex = o.modulationIndex
         if(o.modulationType != undefined) this.modulationType = o.modulationType
@@ -296,11 +295,13 @@ export class OmniOscillator extends Instrument {
         if(o.phase != undefined) this.phase = o.phase
         if(o.wave != undefined) this.wave = o.wave
         if(o.wavePartial != undefined) this.wavePartial = o.wavePartial
-
+        
         if(o.attack != undefined) this.attack = o.attack
         if(o.decay != undefined) this.decay = o.decay
         if(o.sustain != undefined) this.sustain = o.sustain
         if(o.release != undefined) this.release = o.release
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     serializeOut() {

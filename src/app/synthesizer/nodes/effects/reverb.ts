@@ -64,11 +64,11 @@ export class Reverb extends Effect {
 
         super.serializeIn(o)
 
-        if(o.enabled != undefined) this.enabled = o.enabled
-
         if(o.wet != undefined) this.wet = o.wet
         if(o.decay != undefined) this.decay = o.decay
         if(o.preDelay != undefined) this.preDelay = o.preDelay
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
@@ -78,10 +78,6 @@ export class Reverb extends Effect {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
-
-            wet: this.wet,
             decay: this.decay,
             preDelay: this.preDelay,
         }

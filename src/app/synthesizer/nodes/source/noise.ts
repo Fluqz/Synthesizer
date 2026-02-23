@@ -223,18 +223,19 @@ export class Noise extends Instrument {
         super.serializeIn(o)
         
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.volume != undefined) this.volume = o.volume
-
+        
         if(o.wave != undefined) this.wave = o.wave
         if(o.fadeIn != undefined) this.fadeIn = o.fadeIn
         if(o.fadeOut != undefined) this.fadeOut = o.fadeOut
         if(o.playbackRate != undefined) this.playbackRate = o.playbackRate
-
+        
         if(o.attack != undefined) this.attack = o.attack
         if(o.decay != undefined) this.decay = o.decay
         if(o.sustain != undefined) this.sustain = o.sustain
         if(o.release != undefined) this.release = o.release
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {

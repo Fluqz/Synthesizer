@@ -16,18 +16,23 @@ export abstract class Effect extends Node {
     abstract get wet()
     abstract set wet(w) 
 
+    protected storedWet: number
+
     constructor(name, wet) {
 
         super(name)
 
         this._wet = wet
+        this.storedWet = this._wet
     }
 
     override set enabled(e) { 
 
-        this._enabled = e 
-        
-        this.wet = e ? this.wet : 0
+        if(this._enabled == true && e == false) this.storedWet = this.wet
+            
+        this._enabled = e
+            
+        this.wet = e ? this.storedWet : 0
     }
     override get enabled() { return this._enabled }
 
@@ -37,8 +42,9 @@ export abstract class Effect extends Node {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.wet != undefined) this.wet = o.wet
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() : IEffectSerialization {
@@ -48,9 +54,7 @@ export abstract class Effect extends Node {
         return {
 
             ...no,
-            name: this.name,
-            enabled: this.enabled,
-            wet: this.wet,
+            wet: this.enabled ? this.wet : this.storedWet,
         }
     }
  }

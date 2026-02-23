@@ -83,7 +83,7 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         this.isPlaying = false
         this.loop = true
 
-        this.noteLength = '1/4'
+        this.noteLength = '1/8'
         this.bars = 2
     }
 

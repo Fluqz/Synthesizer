@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 import { Instrument, InstrumentType } from './instrument';
 import { NodeName } from '../../synthesizer';
-import { ParamType } from '../node';
+import { KnobNodeParameter, ParamType } from '../node';
 import { DB } from './../../../core/db';
 import { G } from '../../../globals';
 
@@ -212,11 +212,10 @@ export class Sampler extends Instrument {
         super.serializeIn(o)
 
         if(o.name != undefined) this.name = o.name
-        if(o.enabled != undefined) this.enabled = o.enabled
         if(o.volume != undefined) this.volume = o.volume
-
-        console.log('SERIALIZE IN ', o.sample)
         if(o.sample != undefined) this.sample = o.sample
+        
+        if(o.enabled != undefined) this.enabled = o.enabled
     }
 
     override serializeOut() {
