@@ -25,7 +25,8 @@ import { CommonModule } from "@angular/common";
             [style.top.px]="yPos"
             [style.height.px]="height"
             [style.left.px]="((getSeconds(note.time) / sequencer.bars) * timelineRect.width)"
-            [style.width.px]="getNoteWidth()">
+            [style.width.px]="getNoteWidth()"
+            [attr.data-note-id]="note.id">
             
             <!-- Compact view (default) -->
             <div class="note-display">
