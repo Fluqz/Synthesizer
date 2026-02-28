@@ -946,6 +946,14 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
             const noteX = (position.time / this._bars) * this.timelineRect.width;
             const noteWidth = (position.length / this._bars) * this.timelineRect.width;
             
+            console.log(`🎨 DOM update for note ${noteId}:`, {
+              time: position.time,
+              length: position.length,
+              noteX: noteX.toFixed(1),
+              noteWidth: noteWidth.toFixed(1),
+              bars: this._bars,
+            });
+            
             noteElement.style.left = noteX + 'px';
             noteElement.style.width = noteWidth + 'px';
           }
@@ -1052,28 +1060,32 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Unified pointer up handler for both drag and rectangular selection
-   */
+    * Unified pointer up handler for both drag and rectangular selection
+    */
   onDocumentPointerUp(e: PointerEvent) {
     e.stopPropagation();
 
     // Handle rectangular selection end first
     const selectedIds = this.selectionService.endDragSelection(e);
     if (selectedIds.length > 0) {
+      console.log('📦 Rectangular selection ended, selected:', selectedIds);
       this.timelineState.selectNotes(selectedIds);
     } else {
       // Handle drag/resize end via service
       const commit = this.inputService.endDrag(e);
+      console.log('🏁 Drag ended, commit:', commit);
       
       // ALWAYS clear inline DOM styles (whether drag succeeded or not)
       // This prevents residual styles from mini-movements
       const dragState = this.inputService.getDragState();
       if (dragState.noteIds && dragState.noteIds.length > 0) {
+        console.log('🧹 Clearing DOM styles for notes:', dragState.noteIds);
         for (const noteId of dragState.noteIds) {
           const noteElement = this.timeline?.querySelector(
             `[data-note-id="${noteId}"]`
           ) as HTMLElement;
           if (noteElement) {
+            console.log(`  Cleared styles for note ${noteId}`);
             noteElement.style.left = '';
             noteElement.style.width = '';
           }

@@ -107,6 +107,14 @@ export class TimelineInputService {
       }
     }
 
+    console.log('🟢 startDragMultiple:', {
+      noteIds,
+      originalPositions: Array.from(originalPositions.entries()),
+      startClientX: event.clientX,
+      bars: this.bars,
+      timelineWidth: this.timelineRect.width,
+    });
+
     const pixelsPerBar = this.timelineRect.width / this.bars;
 
     const newState: DragState = {
@@ -238,6 +246,13 @@ export class TimelineInputService {
           length: original.length,
         });
       }
+      console.log('📍 updateDrag (MOVE):', {
+        deltaX,
+        deltaInBars,
+        pixelsPerBar: state.pixelsPerBar,
+        type: state.type,
+        positions: Array.from(positions.entries()).slice(0, 2), // Log first 2 notes
+      });
     } else if (state.type === 'resize-start') {
       // Resizing start handle of all selected notes
       for (const [noteId, original] of state.originalPositions) {
@@ -249,6 +264,7 @@ export class TimelineInputService {
           length: original.time + original.length - newStartTime,
         });
       }
+      console.log('📍 updateDrag (RESIZE-START):', { deltaInBars, type: state.type });
     } else if (state.type === 'resize-end') {
       // Resizing end handle of all selected notes
       for (const [noteId, original] of state.originalPositions) {
@@ -266,6 +282,7 @@ export class TimelineInputService {
           length: this.applyQuantization(newLength),
         });
       }
+      console.log('📍 updateDrag (RESIZE-END):', { deltaInBars, type: state.type });
     }
 
     return { positions, isValid, deltaInBars };
@@ -278,6 +295,7 @@ export class TimelineInputService {
     const state = this.dragState.value;
 
     if (!state.active) {
+      console.log('❌ endDrag: drag not active');
       return { success: false, updatedNotes: new Map() };
     }
 
@@ -285,6 +303,7 @@ export class TimelineInputService {
     const hasMovement = Math.abs(event.clientX - state.startClientX) > 3;
 
     if (!hasMovement) {
+      console.log('❌ endDrag: no movement detected');
       this.cancelDrag();
       return { success: false, updatedNotes: new Map() };
     }
@@ -293,9 +312,16 @@ export class TimelineInputService {
     const update = this.updateDrag(event);
 
     if (!update.isValid) {
+      console.log('❌ endDrag: invalid update');
       this.cancelDrag();
       return { success: false, updatedNotes: new Map() };
     }
+
+    console.log('✅ endDrag: committing changes', {
+      dragType: state.type,
+      noteIds: state.noteIds,
+      updates: Array.from(update.positions.entries()).slice(0, 2),
+    });
 
     // Commit to sequencer
     const updatedNotes = new Map<number, { time: number; length: number }>();
@@ -303,6 +329,10 @@ export class TimelineInputService {
     for (const [noteId, position] of update.positions) {
       const note = this.sequencer.sequence.find((n: SequenceObject) => n.id === noteId);
       if (note) {
+        console.log(`  📝 Updating note ${noteId}:`, {
+          before: { time: note.time, length: note.length },
+          after: position,
+        });
         this.sequencer.updateNote(
           noteId,
           note.note,
@@ -322,6 +352,7 @@ export class TimelineInputService {
    * Cancel drag operation (discard changes)
    */
   cancelDrag(): void {
+    console.log('🔄 cancelDrag: resetting drag state');
     this.dragState.next(initialDragState);
     this.isDragging.next(false);
   }
