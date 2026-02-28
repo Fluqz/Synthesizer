@@ -1,50 +1,79 @@
-# Drag Movement Fix - Summary
+# Drag Movement Fix - Complete Summary
 
-## Problem
-Multi-note dragging was not working. The service was starting drag immediately on pointerdown and setting `isDragging.next(true)` without waiting for actual pointer movement.
+## Issues Fixed
 
-## Root Cause
-In `timeline-input.service.ts` `startDragMultiple()`:
-- Drag state was marked `active: true` 
-- `isDragging` observable was immediately set to `true`
-- No movement threshold was enforced before DOM updates
+### Issue 1: Drag Movement Threshold Missing
+**Problem**: Multi-note dragging was not working because `isDragging` was set immediately on pointerdown, causing premature DOM updates before actual movement.
 
-This meant:
-1. Clicking a note would mark it as dragging
-2. `onDocumentPointerMove` would immediately try to update DOM styles
-3. But the movement calculation would be 0 (no movement yet)
-4. Notes would appear frozen or non-responsive
+**Root Cause**: 
+- `timeline-input.service.ts` `startDragMultiple()` immediately called `isDragging.next(true)`
+- Movement calculation was 0 on first frame
+- Notes appeared frozen
 
-## Solution
-Implemented a 3-pixel movement threshold:
+**Solution**:
+- Modified `startDragMultiple()` to set `dragState.active = true` but NOT set `isDragging`
+- Added public method `setDragging(isDragging: boolean)` to service
+- In component's `onDocumentPointerMove()`, added 3-pixel movement threshold check before activating drag
+- Only DOM updates when distance > 3px
 
-1. **Service changes** (`timeline-input.service.ts`):
-   - `startDragMultiple()` sets `dragState.active = true` but does NOT set `isDragging.next(true)`
-   - Added new public method `setDragging(isDragging: boolean)` for component to call
+### Issue 2: Services Using Global Singleton Pattern
+**Problem**: Services had `@Injectable({ providedIn: 'root' })` which made them global singletons, conflicting with component-level `providers` array. This prevented proper isolation between multiple Timeline instances.
 
-2. **Component changes** (`Timeline.component.ts`):
-   - In `onDocumentPointerMove()`, added movement threshold check:
-     - If drag is initiated (`dragState.active`) but not yet "dragging" (`isDragging === false`)
-     - Calculate distance moved: `sqrt(deltaX² + deltaY²)`
-     - Only call `inputService.setDragging(true)` when distance > 3px
-   - Added cursor feedback (`grabbing`) during actual drag
+**Root Cause**:
+- All 4 services declared `providedIn: 'root'`
+- Angular would use the root-level instance instead of the component-provided instance
+- Multi-sequencer isolation was broken
+
+**Solution**:
+- Removed `providedIn: 'root'` from all 4 services:
+  - `timeline-input.service.ts`
+  - `timeline-state.service.ts`
+  - `timeline-selection.service.ts`
+  - `timeline-keyboard.service.ts`
+- Now services use component-level injection from Timeline's `providers: [...]` array
+- Each Timeline instance gets its own independent service instances
 
 ## Files Modified
-- `src/app/services/timeline-input.service.ts` - Removed premature `isDragging.next(true)`, added `setDragging()` method
-- `src/app/view/Timeline.component.ts` - Added movement threshold logic and cursor feedback
+- `src/app/services/timeline-input.service.ts`:
+  - Removed `isDragging.next(true)` from `startDragMultiple()`
+  - Added `setDragging(isDragging: boolean)` method
+  - Removed `providedIn: 'root'` from `@Injectable()`
 
-## Testing
-- Build: ✅ Successful
-- Expected behavior: Click and hold a note, move mouse > 3px → note follows cursor
-- Multiple selection drag should now work properly
+- `src/app/services/timeline-state.service.ts`:
+  - Removed `providedIn: 'root'` from `@Injectable()`
+
+- `src/app/services/timeline-selection.service.ts`:
+  - Removed `providedIn: 'root'` from `@Injectable()`
+
+- `src/app/services/timeline-keyboard.service.ts`:
+  - Removed `providedIn: 'root'` from `@Injectable()`
+
+- `src/app/view/Timeline.component.ts`:
+  - Enhanced `onDocumentPointerMove()` with movement threshold detection
+  - Added cursor feedback during drag (`grabbing`)
+
+## Build Status
+✅ Build successful, no TypeScript errors
+
+## Expected Behavior After Fix
+- Click a note → note is selected
+- Click and drag note > 3px → note follows cursor smoothly
+- Ctrl+Click multiple notes → select multiple
+- Drag multiple selected notes → all move together with relative spacing preserved
+- Resize handles work normally
+- No visual glitches or stuttering
+
+## Commits
+1. `717c145` - "Fix drag movement threshold - don't start DOM updates until pointer moves 3px"
+2. `98499ed` - "Remove providedIn: 'root' from services - use component-level injection for isolation"
 
 ## Next Steps
-Run the TESTING_GUIDE.md test cases to verify:
-- Single note drag works
-- Multi-note drag works  
-- Resize still works
-- Selection highlighting works
-- No visual glitches
-
----
-**Commit:** `717c145` - "Fix drag movement threshold - don't start DOM updates until pointer moves 3px"
+1. Test in browser at http://localhost:4200/Synthesizer
+2. Run full TESTING_GUIDE.md checklist
+3. Verify:
+   - Single note drag works
+   - Multi-note drag works  
+   - Resize still works
+   - Selection highlighting works
+   - Multi-sequencer isolation works
+   - No visual glitches
