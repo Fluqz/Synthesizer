@@ -17,12 +17,18 @@ import {
   Input,
   OnChanges,
   OnDestroy,
+  OnInit,
   Output,
   ViewChild,
 } from "@angular/core";
 import { NoteComponent } from "./Note.component";
 import { CommonModule } from "@angular/common";
 import { Synthesizer } from "../synthesizer/synthesizer";
+import { TimelineStateService } from "../services/timeline-state.service";
+import { TimelineInputService } from "../services/timeline-input.service";
+import { TimelineSelectionService } from "../services/timeline-selection.service";
+import { TimelineKeyboardService } from "../services/timeline-keyboard.service";
+import { Observable } from "rxjs";
 
 export const convertNoteLength = (n: NoteLength) => {
   switch (n) {
@@ -65,6 +71,12 @@ export interface DragState {
   standalone: true,
   imports: [CommonModule, NoteComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [
+    TimelineStateService,
+    TimelineInputService,
+    TimelineSelectionService,
+    TimelineKeyboardService,
+  ],
   template: `
     <div *ngIf="sequencer != undefined" class="timeline-wrapper">
       <div
@@ -134,6 +146,29 @@ export interface DragState {
             ></div>
           </div>
 
+          <!-- Rectangular selection box overlay -->
+          <div
+            class="timeline-selection-overlay"
+            *ngIf="(selectionBox$ | async) as box"
+            [ngClass]="{ visible: box.visible }"
+          >
+            <div
+              class="selection-rect"
+              *ngIf="box.visible"
+              [style.left.px]="Math.min(box.startX, box.currentX)"
+              [style.top.px]="Math.min(box.startY, box.currentY)"
+              [style.width.px]="Math.abs(box.currentX - box.startX)"
+              [style.height.px]="Math.abs(box.currentY - box.startY)"
+            ></div>
+          </div>
+
+          <!-- Selection count info -->
+          <div class="selection-info" *ngIf="(selectedNoteIds$ | async) as selectedIds">
+            <span *ngIf="selectedIds.size > 0">
+              {{ selectedIds.size }} note(s) selected
+            </span>
+          </div>
+
           <div class="timeline-notes">
             @for (note of sequence; track note; let i = $index) {
               <sy-note
@@ -143,10 +178,8 @@ export interface DragState {
                 [timelineRect]="timelineRect"
                 [yPos]="noteYArray[i]"
                 [height]="noteHeight"
-                [isSelected]="
-                  _clickedSequenceObjectID != null &&
-                  _clickedSequenceObjectID == note.id
-                "
+                [isSelected]="(selectedNoteIds$ | async)?.has(note.id)"
+                [isDragging]="isDragging$ | async"
               >
                 <div class="drag-handle drag-start" data-handle="start"></div>
 
@@ -227,6 +260,38 @@ export interface DragState {
 
       background-color: #fff;
     }
+
+    /* Rectangular selection box */
+    .timeline-selection-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .selection-rect {
+      position: absolute;
+      border: 2px dashed var(--c-hl);
+      background: rgba(0, 255, 0, 0.1);
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+    }
+
+    /* Selection count info */
+    .selection-info {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      background: rgba(0, 255, 0, 0.1);
+      border: 1px solid var(--c-hl);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--c-hl);
+      z-index: 101;
+    }
     .timeline .add-remove-cont {
       height: 100%;
       width: 50px;
@@ -258,7 +323,7 @@ export interface DragState {
     "(document:pointercancel)": "onDocumentPointerCancel($event)",
   },
 })
-export class TimelineComponent implements OnChanges, OnDestroy {
+export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
   /** Instance of the Sequencer */
   @Input("sequencer") sequencer: Sequencer;
 
@@ -389,17 +454,79 @@ export class TimelineComponent implements OnChanges, OnDestroy {
 
   private noteRect: DOMRect;
 
-  constructor(public cdr: ChangeDetectorRef) {}
+  // Observable streams from services
+  selectedNoteIds$: Observable<Set<number>>;
+  clipboard$: Observable<any>;
+  dragState$: Observable<any>;
+  isDragging$: Observable<boolean>;
+  selectionBox$: Observable<any>;
+  isDragSelecting$: Observable<boolean>;
 
-  @HostListener("window:resize", ["$event"])
+  constructor(
+    public cdr: ChangeDetectorRef,
+    private timelineState: TimelineStateService,
+    private inputService: TimelineInputService,
+    private selectionService: TimelineSelectionService,
+    private keyboardService: TimelineKeyboardService,
+  ) {
+    // Initialize observables
+    this.selectedNoteIds$ = this.timelineState.selectedNoteIds$;
+    this.clipboard$ = this.timelineState.clipboard$;
+    this.dragState$ = this.inputService.dragState$;
+    this.isDragging$ = this.inputService.isDragging$;
+    this.selectionBox$ = this.selectionService.selectionBox$;
+    this.isDragSelecting$ = this.selectionService.isDragSelecting$;
+  }
+
+  @HostListener('window:resize', ['$event'])
   onResize(e) {
     this.update();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent) {
+    this.keyboardService.handleKeyDown(event);
+  }
+
+  ngOnInit() {
+    // Subscribe to state changes for change detection
+    this.selectedNoteIds$.subscribe(() => {
+      this.cdr.markForCheck();
+    });
+
+    this.isDragging$.subscribe(() => {
+      this.cdr.markForCheck();
+    });
+
+    this.isDragSelecting$.subscribe(() => {
+      this.cdr.markForCheck();
+    });
+
+    // Register keyboard callbacks
+    this.keyboardService.registerCallbacks({
+      onCopy: () => this.onCopyFeedback(),
+      onDelete: () => this.onDeleteFeedback(),
+      onPaste: () => this.onPasteFeedback(),
+    });
   }
 
   ngAfterViewInit() {
     this.onResizeTimeline();
 
     if (this.sequencer == undefined) return;
+
+    // Configure services
+    this.timelineState.setSequencer(this.sequencer);
+    this.inputService.setSequencer(this.sequencer);
+
+    if (this.timelineRect) {
+      this.inputService.setConfig(
+        this._bars,
+        this.gridQuantize,
+        this.timelineRect,
+      );
+      this.selectionService.setTimelineElement(this.timeline);
+    }
 
     // Initialize BeatMachine
     BeatMachine.initialize();
@@ -536,50 +663,65 @@ export class TimelineComponent implements OnChanges, OnDestroy {
     this.saveUndo();
   }
 
-  /** Pointerdown Timeline event */
-  /**
-   * CENTRALIZED pointer handler - intercepts ALL pointer events for notes and timeline
-   * Uses event.target.closest() to determine what was clicked
-   */
+  /** Pointerdown Timeline event - Route to services */
   onTimelineClick(e: PointerEvent) {
-    console.log('🔵 onTimelineClick fired', { clientX: e.clientX, clientY: e.clientY, target: e.target });
-    // Stop any propagation from child elements
     e.stopPropagation();
 
     const target = e.target as HTMLElement;
-    console.log('📍 Target element:', target.className, target.tagName);
-
-    // Detect what was clicked using DOM traversal
-    const dragHandle = target.closest(".drag-handle") as HTMLElement | null;
-    const noteElement = target.closest(".note") as HTMLElement | null;
-    const controlBtn = target.closest(".note-controls") as HTMLElement | null;
-
-    console.log('🎯 Detection results:', { 
-      dragHandle: !!dragHandle, 
-      noteElement: !!noteElement, 
-      controlBtn: !!controlBtn,
-      noteId: noteElement?.getAttribute('data-note-id')
-    });
+    const dragHandle = target.closest('.drag-handle') as HTMLElement | null;
+    const noteElement = target.closest('.note') as HTMLElement | null;
+    const controlBtn = target.closest('.note-controls') as HTMLElement | null;
 
     if (dragHandle && noteElement) {
-      console.log('▶️ RESIZE HANDLE detected');
-      // RESIZE HANDLE: Start resize operation
-      this.handleResizeStart(e, dragHandle as HTMLElement, noteElement as HTMLElement);
+      // RESIZE HANDLE: Start resize
+      const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
+      const handleType = dragHandle.getAttribute('data-handle');
+      const handle = handleType === 'start' ? 0 : 1;
+
+      // Check if this note is part of multi-selection
+      const selectedIds = this.timelineState.getSelectedNoteIds();
+      if (selectedIds.includes(noteId) && selectedIds.length > 1) {
+        // Resize all selected notes together
+        this.inputService.startResizeMultiple(selectedIds, handle, e);
+      } else {
+        // Resize only this note
+        this.inputService.startResize(noteId, handle, e);
+      }
     } else if (controlBtn) {
-      console.log('▶️ CONTROL BUTTON detected');
       // NOTE CONTROL BUTTON: Don't start drag
-      this.dragState.active = false;
       return;
     } else if (noteElement) {
-      console.log('▶️ NOTE BODY detected');
-      // NOTE BODY: Prepare for potential drag or selection
-      this.handleNotePointerDown(e, noteElement as HTMLElement);
-    } else {
-      console.log('▶️ EMPTY TIMELINE clicked');
-      // EMPTY TIMELINE: Clear selection unless modifier key held
-      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
-        this._clickedSequenceObjectID = null;
+      // NOTE BODY: Handle selection + potential drag
+      const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
+      const previouslySelected = this.timelineState.isNoteSelected(noteId);
+
+      if (e.ctrlKey || e.metaKey) {
+        // Ctrl+Click: Toggle selection
+        this.timelineState.toggleSelectNote(noteId);
+      } else if (e.shiftKey) {
+        // Shift+Click: Range select
+        const lastClicked = this.timelineState.getLastClickedNoteId();
+        this.timelineState.selectRange(lastClicked, noteId);
+      } else {
+        // Single click: Select only this note
+        this.timelineState.selectNote(noteId, true);
       }
+
+      // Only start drag if:
+      // 1. Note wasn't previously selected (new selection = potential drag)
+      // 2. OR we're doing multi-select with modifier key (Ctrl/Shift)
+      const selectedIds = this.timelineState.getSelectedNoteIds();
+      const isMultiSelectClick = (e.ctrlKey || e.metaKey || e.shiftKey);
+      
+      if (selectedIds.length > 0 && (!previouslySelected || isMultiSelectClick)) {
+        this.inputService.startDragMultiple(selectedIds, e);
+      }
+    } else {
+      // EMPTY TIMELINE: Start rectangular selection or clear
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        this.timelineState.clearSelection();
+      }
+      this.selectionService.startDragSelection(e);
     }
   }
 
@@ -765,21 +907,55 @@ export class TimelineComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Handle pointer move for both note dragging and resizing
-   */
+     * Handle pointer move for both note dragging and resizing
+     */
   onDocumentPointerMove(e: PointerEvent) {
     e.stopPropagation();
 
-    // Handle note dragging
-    if (this.isPointerDown && this.noteEle) {
-      console.log('🟡 onDocumentPointerMove - handling note drag');
-      this.handleNotePointerMove(e);
+    const dragState = this.inputService.getDragState();
+
+    // Check if drag was initiated but movement threshold not met yet
+    if (dragState.active && !this.inputService.isCurrentlyDragging()) {
+      // Calculate movement distance
+      const deltaX = e.clientX - dragState.startClientX;
+      const deltaY = e.clientY - dragState.startClientY;
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // If movement exceeds threshold (3px), activate actual dragging
+      if (distance > 3) {
+        this.inputService.setDragging(true);
+      } else {
+        // Movement below threshold, don't update DOM yet
+        return;
+      }
     }
 
-    // Handle note resizing
-    if (this.dragState.active && this.dragState.type?.includes("resize")) {
-      console.log('🟡 onDocumentPointerMove - handling resize');
-      this.resizeNoteMoveHandler(e);
+    // Handle drag/resize via services
+    if (this.inputService.isCurrentlyDragging()) {
+      document.body.style.cursor = 'grabbing';
+      const update = this.inputService.updateDrag(e);
+      
+      // Apply DOM updates for smooth visual feedback during drag
+      if (update.isValid && this.timelineRect) {
+        for (const [noteId, position] of update.positions) {
+          const noteElement = this.timeline?.querySelector(
+            `[data-note-id="${noteId}"]`
+          ) as HTMLElement;
+          
+          if (noteElement) {
+            const noteX = (position.time / this._bars) * this.timelineRect.width;
+            const noteWidth = (position.length / this._bars) * this.timelineRect.width;
+            
+            noteElement.style.left = noteX + 'px';
+            noteElement.style.width = noteWidth + 'px';
+          }
+        }
+      }
+    }
+
+    // Handle rectangular selection
+    if (this.selectionService.isCurrentlyDragSelecting()) {
+      this.selectionService.updateDragSelection(e);
     }
   }
 
@@ -876,26 +1052,42 @@ export class TimelineComponent implements OnChanges, OnDestroy {
   }
 
   /**
-    * Unified pointer up handler for both drag and resize
-    */
+   * Unified pointer up handler for both drag and rectangular selection
+   */
   onDocumentPointerUp(e: PointerEvent) {
-    console.log('🔴 onDocumentPointerUp fired', { isNoteDrag: this.isNoteDrag, dragStateActive: this.dragState.active });
     e.stopPropagation();
 
-    // Handle resize end first (takes priority)
-    if (this.dragState.active && this.dragState.type?.includes("resize")) {
-      console.log('🔴 Handling resize end');
-      this.resizeNoteEndHandler(e);
-    } 
-    // Only handle note drag/click end if NOT resizing
-    else if (this.selectedNote) {
-      console.log('🔴 Handling note end (drag or click)');
-      this.handleNotePointerUp(e);
+    // Handle rectangular selection end first
+    const selectedIds = this.selectionService.endDragSelection(e);
+    if (selectedIds.length > 0) {
+      this.timelineState.selectNotes(selectedIds);
+    } else {
+      // Handle drag/resize end via service
+      const commit = this.inputService.endDrag(e);
+      
+      // ALWAYS clear inline DOM styles (whether drag succeeded or not)
+      // This prevents residual styles from mini-movements
+      const dragState = this.inputService.getDragState();
+      if (dragState.noteIds && dragState.noteIds.length > 0) {
+        for (const noteId of dragState.noteIds) {
+          const noteElement = this.timeline?.querySelector(
+            `[data-note-id="${noteId}"]`
+          ) as HTMLElement;
+          if (noteElement) {
+            noteElement.style.left = '';
+            noteElement.style.width = '';
+          }
+        }
+      }
+      
+      if (commit.success) {
+        this.updateWrapperHeight();
+        this.saveUndo();
+      }
     }
 
-    // Reset common state
-    this.isPointerDown = false;
-    document.body.style.cursor = "default";
+    document.body.style.cursor = 'default';
+    this.cdr.markForCheck();
   }
 
   /**
@@ -960,24 +1152,46 @@ export class TimelineComponent implements OnChanges, OnDestroy {
   }
 
   /**
-   * Handle pointer cancel (e.g., pointer leaves window)
+   * Keyboard action callbacks
    */
+  private onCopyFeedback(): void {
+    const count = this.timelineState.getSelectedCount();
+    console.log(`Copied ${count} note(s)`);
+  }
+
+  private onPasteFeedback(): void {
+    // Paste at next bar from current sequencer time
+    const currentTime = this.sequencer.isPlaying
+      ? (Tone.getTransport().position as number)
+      : 0;
+
+    const newNotes = this.timelineState.pasteAtNextBar(currentTime);
+    if (newNotes.length > 0) {
+      // Add notes to sequencer and select them
+      for (const note of newNotes) {
+        this.sequencer.addNote(note.note, note.time, note.length, note.velocity);
+      }
+      this.timelineState.selectNotes(newNotes.map(n => n.id));
+      this.update();
+      this.saveUndo();
+      console.log(`Pasted ${newNotes.length} note(s)`);
+    }
+  }
+
+  private onDeleteFeedback(): void {
+    // Delete was already handled by service
+    this.update();
+    this.saveUndo();
+  }
+
+  /**
+    * Handle pointer cancel (e.g., pointer leaves window)
+    */
   onDocumentPointerCancel(e: PointerEvent) {
     e.stopPropagation();
-
-    // End note drag if active
-    if (this.isPointerDown && this.isNoteDrag) {
-      this.handleNotePointerUp(e);
-    }
-
-    // End resize if active
-    if (this.dragState.active && this.dragState.type?.includes("resize")) {
-      this.resizeNoteEndHandler(e);
-    }
-
-    // Reset state
-    this.isPointerDown = false;
-    document.body.style.cursor = "default";
+    this.inputService.cancelDrag();
+    this.selectionService.cancelDragSelection();
+    document.body.style.cursor = 'default';
   }
 
   /**
