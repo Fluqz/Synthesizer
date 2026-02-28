@@ -17,9 +17,7 @@ const initialSelectionBox: SelectionBox = {
   visible: false,
 };
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class TimelineSelectionService {
   private selectionBox = new BehaviorSubject<SelectionBox>(initialSelectionBox);
   private isDragSelecting = new BehaviorSubject<boolean>(false);

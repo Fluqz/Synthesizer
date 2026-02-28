@@ -1,9 +1,7 @@
 import { Injectable, HostListener } from '@angular/core';
 import { TimelineStateService } from './timeline-state.service';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class TimelineKeyboardService {
   private onCopyCallback?: () => void;
   private onPasteCallback?: (noteIds: number[]) => void;

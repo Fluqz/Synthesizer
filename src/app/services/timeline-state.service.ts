@@ -10,9 +10,7 @@ export interface ClipboardData {
   relativeTimes: number[];
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class TimelineStateService {
   private selectedNoteIds = new BehaviorSubject<Set<number>>(new Set());
   private clipboard = new BehaviorSubject<ClipboardData | null>(null);

@@ -46,9 +46,7 @@ const initialDragState: DragState = {
   pixelsPerBar: 0,
 };
 
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable()
 export class TimelineInputService {
   private dragState = new BehaviorSubject<DragState>(initialDragState);
   private isDragging = new BehaviorSubject<boolean>(false);
