@@ -100,10 +100,17 @@ export class TimelineInputService {
     for (const noteId of noteIds) {
       const note = this.sequencer.sequence.find((n: SequenceObject) => n.id === noteId);
       if (note) {
-        originalPositions.set(noteId, {
-          time: typeof note.time === 'number' ? note.time : 0,
-          length: typeof note.length === 'number' ? note.length : 0,
-        });
+        // Convert Tone.Unit.Time to numbers (bars)
+        // Note: In Sequencer, time and length are stored in bars (already numbers)
+        const time = typeof note.time === 'number' ? note.time : Tone.Time(note.time).toSeconds() / Tone.Time('1m').toSeconds();
+        const length = typeof note.length === 'number' ? note.length : Tone.Time(note.length).toSeconds() / Tone.Time('1m').toSeconds();
+        
+        if (time === undefined || length === undefined || isNaN(time) || isNaN(length)) {
+          console.error(`❌ Invalid note ${noteId}:`, { time: note.time, length: note.length });
+          continue;
+        }
+        
+        originalPositions.set(noteId, { time, length });
       }
     }
 
@@ -155,8 +162,9 @@ export class TimelineInputService {
     const note = this.sequencer.sequence.find((n: SequenceObject) => n.id === noteId);
     if (!note) return;
 
-    const noteTimeInBars = typeof note.time === 'number' ? note.time : 0;
-    const noteLengthInBars = typeof note.length === 'number' ? note.length : 0;
+    // Convert Tone.Unit.Time to numbers (bars)
+    const noteTimeInBars = typeof note.time === 'number' ? note.time : Tone.Time(note.time).toSeconds() / Tone.Time('1m').toSeconds();
+    const noteLengthInBars = typeof note.length === 'number' ? note.length : Tone.Time(note.length).toSeconds() / Tone.Time('1m').toSeconds();
     const pixelsPerBar = this.timelineRect.width / this.bars;
 
     const newState: DragState = {
@@ -195,10 +203,11 @@ export class TimelineInputService {
     for (const noteId of noteIds) {
       const note = this.sequencer.sequence.find((n: SequenceObject) => n.id === noteId);
       if (note) {
-        originalPositions.set(noteId, {
-          time: typeof note.time === 'number' ? note.time : 0,
-          length: typeof note.length === 'number' ? note.length : 0,
-        });
+        // Convert Tone.Unit.Time to numbers (bars)
+        const time = typeof note.time === 'number' ? note.time : Tone.Time(note.time).toSeconds() / Tone.Time('1m').toSeconds();
+        const length = typeof note.length === 'number' ? note.length : Tone.Time(note.length).toSeconds() / Tone.Time('1m').toSeconds();
+        
+        originalPositions.set(noteId, { time, length });
       }
     }
 
