@@ -1087,8 +1087,8 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-    * Unified pointer up handler for both drag and rectangular selection
-    */
+     * Unified pointer up handler for both drag and rectangular selection
+     */
   onDocumentPointerUp(e: PointerEvent) {
     e.stopPropagation();
 
@@ -1122,6 +1122,21 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       if (commit.success) {
         this.updateWrapperHeight();
         this.saveUndo();
+      }
+      
+      // Open note controls ONLY if this was a click (no drag/resize)
+      // Check if the target was a note element
+      const target = e.target as HTMLElement;
+      const noteElement = target.closest('.note') as HTMLElement | null;
+      if (noteElement && !commit.success) {
+        // No drag occurred (commit.success === false means "no movement detected")
+        // Open controls for the clicked note
+        const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
+        const selectedNote = this.sequence.find(n => n.id === noteId);
+        if (selectedNote) {
+          console.log('📋 Opening controls for note:', noteId);
+          this._clickedSequenceObjectID = selectedNote.id;
+        }
       }
     }
 
