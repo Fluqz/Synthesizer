@@ -704,27 +704,30 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       const previouslySelected = this.timelineState.isNoteSelected(noteId);
 
       if (e.ctrlKey || e.metaKey) {
-        // Ctrl+Click: Toggle selection
+        // Ctrl+Click: Toggle selection (add/remove individual note)
         console.log('👆 Ctrl+Click toggle:', noteId);
         this.timelineState.toggleSelectNote(noteId);
       } else if (e.shiftKey) {
-        // Shift+Click: Range select (ADD to existing selection)
-        const lastClicked = this.timelineState.getLastClickedNoteId();
-        console.log('⬆️ Shift+Click range select:', { lastClicked, current: noteId });
-        this.timelineState.selectRange(lastClicked, noteId);
+        // Shift+Click: ADD this note to selection (just the clicked note, no range)
+        console.log('⬆️ Shift+Click add to selection:', noteId);
+        this.timelineState.selectNote(noteId, false); // false = don't clear others
       } else {
-        // Single click: Select only this note
-        console.log('👆 Single click:', noteId);
-        this.timelineState.selectNote(noteId, true);
+        // Single click: Check if already selected
+        if (previouslySelected) {
+          // Already selected - keep selection (prepare to drag multi-selection)
+          console.log('👆 Single click on already-selected note:', noteId);
+          // Don't change selection, just prepare for potential drag
+        } else {
+          // Not selected - select only this note
+          console.log('👆 Single click new selection:', noteId);
+          this.timelineState.selectNote(noteId, true);
+        }
       }
 
-      // Only start drag if:
-      // 1. Note wasn't previously selected (new selection = potential drag)
-      // 2. OR we're doing multi-select with modifier key (Ctrl/Shift)
+      // Start drag with current selection
       const selectedIds = this.timelineState.getSelectedNoteIds();
-      const isMultiSelectClick = (e.ctrlKey || e.metaKey || e.shiftKey);
       
-      if (selectedIds.length > 0 && (!previouslySelected || isMultiSelectClick)) {
+      if (selectedIds.length > 0) {
         this.inputService.startDragMultiple(selectedIds, e);
       }
     } else {
@@ -935,6 +938,9 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       // If movement exceeds threshold (3px), activate actual dragging
       if (distance > 3) {
         this.inputService.setDragging(true);
+        // Close note controls immediately when drag starts
+        this._clickedSequenceObjectID = null;
+        this.cdr.markForCheck();
       } else {
         // Movement below threshold, don't update DOM yet
         return;
