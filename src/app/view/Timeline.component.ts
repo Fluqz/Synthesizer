@@ -671,6 +671,14 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
     const dragHandle = target.closest('.drag-handle') as HTMLElement | null;
     const noteElement = target.closest('.note') as HTMLElement | null;
     const controlBtn = target.closest('.note-controls') as HTMLElement | null;
+    
+    // Diagnostic: Log notes in sequence to detect any with length 0
+    const notesWithZeroLength = this.sequence.filter(n => 
+      typeof n.length === 'number' && n.length === 0
+    );
+    if (notesWithZeroLength.length > 0) {
+      console.warn('⚠️ Found notes with length 0 in sequence:', notesWithZeroLength);
+    }
 
     if (dragHandle && noteElement) {
       // RESIZE HANDLE: Start resize
@@ -1096,6 +1104,13 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
         this.updateWrapperHeight();
         this.saveUndo();
       }
+    }
+
+    // CRITICAL: Always clear alteredSequenceObject after drag ends
+    // Otherwise it persists and breaks subsequent drags
+    if (this.alteredSequenceObject) {
+      console.log('🧹 Clearing alteredSequenceObject');
+      this.alteredSequenceObject = null;
     }
 
     document.body.style.cursor = 'default';

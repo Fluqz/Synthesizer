@@ -107,9 +107,14 @@ export class TimelineInputService {
       }
     }
 
+    const positionLog = Array.from(originalPositions.entries()).map(([id, pos]) => ({
+      noteId: id,
+      time: pos.time,
+      length: pos.length,
+    }));
     console.log('🟢 startDragMultiple:', {
       noteIds,
-      originalPositions: Array.from(originalPositions.entries()),
+      originalPositions: positionLog,
       startClientX: event.clientX,
       bars: this.bars,
       timelineWidth: this.timelineRect.width,
