@@ -1090,6 +1090,7 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
      * Unified pointer up handler for both drag and rectangular selection
      */
   onDocumentPointerUp(e: PointerEvent) {
+    console.log('🎯 onDocumentPointerUp called');
     e.stopPropagation();
 
     // Handle rectangular selection end first
@@ -1128,15 +1129,22 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       // Check if the target was a note element
       const target = e.target as HTMLElement;
       const noteElement = target.closest('.note') as HTMLElement | null;
+      console.log('📌 onDocumentPointerUp note element check:', {
+        hasNoteElement: !!noteElement,
+        commitSuccess: commit.success,
+        dragState: dragState,
+      });
       if (noteElement && !commit.success) {
         // No drag occurred (commit.success === false means "no movement detected")
         // Open controls for the clicked note
         const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
         const selectedNote = this.sequence.find(n => n.id === noteId);
         if (selectedNote) {
-          console.log('📋 Opening controls for note:', noteId);
+          console.log('📋 onDocumentPointerUp: Opening controls for note:', noteId);
           this._clickedSequenceObjectID = selectedNote.id;
         }
+      } else {
+        console.log('📋 onDocumentPointerUp: NOT opening controls - drag occurred or not a note');
       }
     }
 
@@ -1152,10 +1160,11 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Handle note drag end - commit changes
-   */
+    * Handle note drag end - commit changes
+    * DEPRECATED: This function is from the old drag system and may conflict with new system
+    */
   private handleNotePointerUp(e: PointerEvent) {
-    console.log('🟣 handleNotePointerUp called', { isNoteDrag: this.isNoteDrag, selectedNote: !!this.selectedNote });
+    console.log('🟣 handleNotePointerUp called (OLD SYSTEM)', { isNoteDrag: this.isNoteDrag, selectedNote: !!this.selectedNote });
     if (!this.selectedNote) {
       console.log('❌ !selectedNote, returning');
       return;
