@@ -950,8 +950,16 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       const deltaY = e.clientY - dragState.startClientY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
       
+      console.log('📊 Threshold check:', {
+        dragStateActive: dragState.active,
+        isCurrentlyDragging: this.inputService.isCurrentlyDragging(),
+        distance: distance.toFixed(2),
+        exceedsThreshold: distance > 3,
+      });
+      
       // If movement exceeds threshold (3px), activate actual dragging
       if (distance > 3) {
+        console.log('🔥 THRESHOLD MET! Setting dragWasActivated = true');
         this.inputService.setDragging(true);
         this.dragWasActivated = true; // Track that we actually dragged
         // Close note controls immediately when drag starts
