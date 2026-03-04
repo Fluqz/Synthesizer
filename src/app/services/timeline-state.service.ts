@@ -75,17 +75,22 @@ export class TimelineStateService {
 
   /**
    * Select range of notes between two note IDs (by time order)
+   * IMPORTANT: Adds to existing selection (doesn't clear it)
    */
   selectRange(fromNoteId: number | null, toNoteId: number): void {
     if (!fromNoteId) {
-      this.selectNote(toNoteId);
+      // If no previous selection, start fresh
+      this.selectNote(toNoteId, true);
       return;
     }
 
     const fromNote = this.sequencer.sequence.find((n: SequenceObject) => n.id === fromNoteId);
     const toNote = this.sequencer.sequence.find((n: SequenceObject) => n.id === toNoteId);
 
-    if (!fromNote || !toNote) return;
+    if (!fromNote || !toNote) {
+      console.warn('selectRange: Could not find notes', { fromNoteId, toNoteId });
+      return;
+    }
 
     const fromTime = typeof fromNote.time === 'number' ? fromNote.time : 0;
     const toTime = typeof toNote.time === 'number' ? toNote.time : 0;
@@ -93,7 +98,7 @@ export class TimelineStateService {
     const minTime = Math.min(fromTime, toTime);
     const maxTime = Math.max(fromTime, toTime);
 
-    // Select all notes between minTime and maxTime
+    // Get notes in the range
     const range = this.sequencer.sequence
       .filter((n: SequenceObject) => {
         const nTime = typeof n.time === 'number' ? n.time : 0;
@@ -101,7 +106,20 @@ export class TimelineStateService {
       })
       .map((n: SequenceObject) => n.id);
 
-    this.selectedNoteIds.next(new Set(range));
+    // ADD to existing selection, don't replace it
+    const current = new Set(this.selectedNoteIds.value);
+    range.forEach(id => current.add(id));
+    
+    console.log('📋 selectRange:', {
+      fromNoteId,
+      toNoteId,
+      minTime,
+      maxTime,
+      rangeIds: range,
+      totalSelected: current.size,
+    });
+
+    this.selectedNoteIds.next(current);
     this.lastClickedNoteId = toNoteId;
   }
 

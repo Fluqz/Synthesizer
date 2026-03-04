@@ -705,13 +705,16 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+Click: Toggle selection
+        console.log('👆 Ctrl+Click toggle:', noteId);
         this.timelineState.toggleSelectNote(noteId);
       } else if (e.shiftKey) {
-        // Shift+Click: Range select
+        // Shift+Click: Range select (ADD to existing selection)
         const lastClicked = this.timelineState.getLastClickedNoteId();
+        console.log('⬆️ Shift+Click range select:', { lastClicked, current: noteId });
         this.timelineState.selectRange(lastClicked, noteId);
       } else {
         // Single click: Select only this note
+        console.log('👆 Single click:', noteId);
         this.timelineState.selectNote(noteId, true);
       }
 
