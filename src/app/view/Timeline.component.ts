@@ -707,22 +707,32 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
         // Ctrl+Click: Toggle selection (add/remove individual note)
         console.log('👆 Ctrl+Click toggle:', noteId);
         this.timelineState.toggleSelectNote(noteId);
+        // Don't open controls during modifier clicks
+        this._clickedSequenceObjectID = null;
       } else if (e.shiftKey) {
         // Shift+Click: ADD this note to selection (just the clicked note, no range)
         console.log('⬆️ Shift+Click add to selection:', noteId);
         this.timelineState.selectNote(noteId, false); // false = don't clear others
+        // Don't open controls during shift clicks
+        this._clickedSequenceObjectID = null;
       } else {
         // Single click: Check if already selected
         if (previouslySelected) {
           // Already selected - keep selection (prepare to drag multi-selection)
           console.log('👆 Single click on already-selected note:', noteId);
-          // Don't change selection, just prepare for potential drag
+          // Don't open controls - we might be dragging
+          this._clickedSequenceObjectID = null;
         } else {
           // Not selected - select only this note
           console.log('👆 Single click new selection:', noteId);
           this.timelineState.selectNote(noteId, true);
+          // Don't open controls - we might be dragging
+          this._clickedSequenceObjectID = null;
         }
       }
+
+      // Clear any stale altered sequence object before starting drag
+      this.alteredSequenceObject = null;
 
       // Start drag with current selection
       const selectedIds = this.timelineState.getSelectedNoteIds();
