@@ -443,6 +443,8 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
   private isPointerDown = false;
   private isNoteDrag = false;
+  /** Track whether we ever entered actual drag mode (movement > 3px) */
+  private dragWasActivated = false;
   private noteEle: HTMLElement;
   /** X Offset of mouse to element origin  */
   private clickOffsetX: number = 0;
@@ -733,6 +735,9 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
       // Clear any stale altered sequence object before starting drag
       this.alteredSequenceObject = null;
+      
+      // Reset drag activation flag for this new operation
+      this.dragWasActivated = false;
 
       // Start drag with current selection
       const selectedIds = this.timelineState.getSelectedNoteIds();
@@ -948,6 +953,7 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       // If movement exceeds threshold (3px), activate actual dragging
       if (distance > 3) {
         this.inputService.setDragging(true);
+        this.dragWasActivated = true; // Track that we actually dragged
         // Close note controls immediately when drag starts
         this._clickedSequenceObjectID = null;
         this.cdr.markForCheck();
@@ -1125,17 +1131,18 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
         this.saveUndo();
       }
       
-      // Open note controls ONLY if this was a click (no drag/resize)
+      // Open note controls ONLY if this was a pure click (never entered drag mode)
       // Check if the target was a note element
       const target = e.target as HTMLElement;
       const noteElement = target.closest('.note') as HTMLElement | null;
       console.log('📌 onDocumentPointerUp note element check:', {
         hasNoteElement: !!noteElement,
         commitSuccess: commit.success,
+        dragWasActivated: this.dragWasActivated,
         dragState: dragState,
       });
-      if (noteElement && !commit.success) {
-        // No drag occurred (commit.success === false means "no movement detected")
+      if (noteElement && !this.dragWasActivated) {
+        // Pure click - never entered drag mode (movement never exceeded 3px)
         // Open controls for the clicked note
         const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
         const selectedNote = this.sequence.find(n => n.id === noteId);
@@ -1144,7 +1151,7 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
           this._clickedSequenceObjectID = selectedNote.id;
         }
       } else {
-        console.log('📋 onDocumentPointerUp: NOT opening controls - drag occurred or not a note');
+        console.log('📋 onDocumentPointerUp: NOT opening controls - drag occurred or not a note. dragWasActivated:', this.dragWasActivated);
       }
     }
 
