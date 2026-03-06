@@ -1,6 +1,6 @@
-import { Injectable, Inject, Optional } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { SequenceObject, Sequencer } from '../synthesizer/sequencer';
+import { Injectable, Inject, Optional } from "@angular/core";
+import { BehaviorSubject, Observable } from "rxjs";
+import { SequenceObject, Sequencer } from "../synthesizer/sequencer";
 
 export interface ClipboardData {
   notes: SequenceObject[];
@@ -8,6 +8,8 @@ export interface ClipboardData {
   maxTime: number;
   duration: number;
   relativeTimes: number[];
+  minRowIndex: number;
+  rowIndices: number[];
 }
 
 @Injectable()
@@ -65,7 +67,7 @@ export class TimelineStateService {
       this.selectedNoteIds.next(new Set(noteIds));
     } else {
       const current = new Set(this.selectedNoteIds.value);
-      noteIds.forEach(id => current.add(id));
+      noteIds.forEach((id) => current.add(id));
       this.selectedNoteIds.next(current);
     }
     if (noteIds.length > 0) {
@@ -84,16 +86,23 @@ export class TimelineStateService {
       return;
     }
 
-    const fromNote = this.sequencer.sequence.find((n: SequenceObject) => n.id === fromNoteId);
-    const toNote = this.sequencer.sequence.find((n: SequenceObject) => n.id === toNoteId);
+    const fromNote = this.sequencer.sequence.find(
+      (n: SequenceObject) => n.id === fromNoteId,
+    );
+    const toNote = this.sequencer.sequence.find(
+      (n: SequenceObject) => n.id === toNoteId,
+    );
 
     if (!fromNote || !toNote) {
-      console.warn('selectRange: Could not find notes', { fromNoteId, toNoteId });
+      console.warn("selectRange: Could not find notes", {
+        fromNoteId,
+        toNoteId,
+      });
       return;
     }
 
-    const fromTime = typeof fromNote.time === 'number' ? fromNote.time : 0;
-    const toTime = typeof toNote.time === 'number' ? toNote.time : 0;
+    const fromTime = typeof fromNote.time === "number" ? fromNote.time : 0;
+    const toTime = typeof toNote.time === "number" ? toNote.time : 0;
 
     const minTime = Math.min(fromTime, toTime);
     const maxTime = Math.max(fromTime, toTime);
@@ -101,16 +110,16 @@ export class TimelineStateService {
     // Get notes in the range
     const range = this.sequencer.sequence
       .filter((n: SequenceObject) => {
-        const nTime = typeof n.time === 'number' ? n.time : 0;
+        const nTime = typeof n.time === "number" ? n.time : 0;
         return nTime >= minTime && nTime <= maxTime;
       })
       .map((n: SequenceObject) => n.id);
 
     // ADD to existing selection, don't replace it
     const current = new Set(this.selectedNoteIds.value);
-    range.forEach(id => current.add(id));
-    
-    console.log('📋 selectRange:', {
+    range.forEach((id) => current.add(id));
+
+    console.log("📋 selectRange:", {
       fromNoteId,
       toNoteId,
       minTime,
@@ -179,28 +188,36 @@ export class TimelineStateService {
     }
 
     // Calculate timing info
-    const times = selected.map(n => (typeof n.time === 'number' ? n.time : 0));
-    const lengths = selected.map(n => (typeof n.length === 'number' ? n.length : 0));
+    const times = selected.map((n) =>
+      typeof n.time === "number" ? n.time : 0,
+    );
+    const lengths = selected.map((n) =>
+      typeof n.length === "number" ? n.length : 0,
+    );
+    const rowIndices = selected.map((n) => n.rowIndex || 0);
 
     const minTime = Math.min(...times);
     const maxTime = Math.max(...times.map((t, i) => t + (lengths[i] || 0)));
     const duration = maxTime - minTime;
+    const minRowIndex = Math.min(...rowIndices);
 
-    const relativeTimes = times.map(t => t - minTime);
+    const relativeTimes = times.map((t) => t - minTime);
 
     this.clipboard.next({
-      notes: selected.map(n => ({ ...n })),
+      notes: selected.map((n) => ({ ...n })),
       minTime,
       maxTime,
       duration,
       relativeTimes,
+      minRowIndex,
+      rowIndices,
     });
   }
 
   /**
-   * Paste clipboard at specific time
+   * Paste clipboard at specific time and in a new row
    */
-  pasteAtTime(pasteTime: number): SequenceObject[] {
+  pasteAtTime(pasteTime: number, targetRowIndex?: number): SequenceObject[] {
     const clipboardData = this.clipboard.value;
     if (!clipboardData || clipboardData.notes.length === 0) {
       return [];
@@ -209,16 +226,30 @@ export class TimelineStateService {
     const timeDelta = pasteTime - clipboardData.minTime;
     const newNotes: SequenceObject[] = [];
 
+    // If targetRowIndex not specified, find the next available row
+    let newRowIndex =
+      targetRowIndex !== undefined
+        ? targetRowIndex
+        : this.findNextAvailableRow();
+
     for (let i = 0; i < clipboardData.notes.length; i++) {
       const originalNote = clipboardData.notes[i];
-      const newTime = (typeof originalNote.time === 'number' ? originalNote.time : 0) + timeDelta;
+      const newTime =
+        (typeof originalNote.time === "number" ? originalNote.time : 0) +
+        timeDelta;
 
       // Validate time is >= 0
       if (newTime >= 0) {
+        // Calculate relative row offset from the original clipboard data
+        const originalRowIndex = clipboardData.rowIndices[i] || 0;
+        const rowOffset = originalRowIndex - clipboardData.minRowIndex;
+        const noteRowIndex = newRowIndex + rowOffset;
+
         const newNote: SequenceObject = {
           ...originalNote,
           id: this.generateNewNoteId(),
           time: newTime,
+          rowIndex: noteRowIndex,
         };
         newNotes.push(newNote);
       }
@@ -228,8 +259,23 @@ export class TimelineStateService {
   }
 
   /**
+   * Find the next available row index (one after the max currently used)
+   */
+  private findNextAvailableRow(): number {
+    if (!this.sequencer || this.sequencer.sequence.length === 0) {
+      return 0;
+    }
+
+    const maxRowIndex = Math.max(
+      ...this.sequencer.sequence.map((n) => n.rowIndex || 0),
+    );
+    return maxRowIndex + 1;
+  }
+
+  /**
    * Paste at next bar boundary from given time
    * E.g., if playhead is at 3.5, next bar (assuming 4/4 time) is 4.0
+   * If fromTime is 0 (not playing), paste after the last existing note
    */
   pasteAtNextBar(fromTime: number): SequenceObject[] {
     const clipboardData = this.clipboard.value;
@@ -237,10 +283,29 @@ export class TimelineStateService {
       return [];
     }
 
-    // Calculate next bar (assuming 1 bar = 1 unit)
-    const nextBarStart = Math.ceil(fromTime);
+    // If not playing (fromTime = 0), find the end of the last note
+    let pasteTime = fromTime;
+    if (
+      fromTime === 0 &&
+      this.sequencer &&
+      this.sequencer.sequence.length > 0
+    ) {
+      // Find the latest end time of all notes
+      let maxEndTime = 0;
+      for (const note of this.sequencer.sequence) {
+        const noteTime = typeof note.time === "number" ? note.time : 0;
+        const noteLength = typeof note.length === "number" ? note.length : 0;
+        const noteEndTime = noteTime + noteLength;
+        maxEndTime = Math.max(maxEndTime, noteEndTime);
+      }
+      // Paste one bar after the last note ends (or at bar 1 if timeline is empty)
+      pasteTime = Math.ceil(maxEndTime) || 1;
+    } else {
+      // Calculate next bar (assuming 1 bar = 1 unit)
+      pasteTime = Math.ceil(fromTime);
+    }
 
-    return this.pasteAtTime(nextBarStart);
+    return this.pasteAtTime(pasteTime);
   }
 
   /**
@@ -258,7 +323,9 @@ export class TimelineStateService {
    * Check if clipboard has data
    */
   hasClipboard(): boolean {
-    return this.clipboard.value !== null && this.clipboard.value.notes.length > 0;
+    return (
+      this.clipboard.value !== null && this.clipboard.value.notes.length > 0
+    );
   }
 
   /**
@@ -273,7 +340,9 @@ export class TimelineStateService {
    */
   private generateNewNoteId(): number {
     if (this.sequencer.sequence.length === 0) return 1;
-    const maxId = Math.max(...this.sequencer.sequence.map((n: SequenceObject) => n.id || 0));
+    const maxId = Math.max(
+      ...this.sequencer.sequence.map((n: SequenceObject) => n.id || 0),
+    );
     return maxId + 1;
   }
 }

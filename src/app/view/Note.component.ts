@@ -36,7 +36,7 @@ import { CommonModule } from "@angular/common";
             <ng-content></ng-content>
 
             <!-- Expanded view (on hover via CSS) - hide while dragging -->
-            <div class="note-controls" [class.selected]="isSelected && !isDragging" [style.bottom.px]="-height" [style.line-height.px]="height" (dblclick)="onNoteControlDblClick($event)">
+            <div class="note-controls" [style.line-height.px]="height" [class.selected]="isSelected && selectedCount === 1 && !isDragging" [style.right.px]="getNoteWidth()" (dblclick)="onNoteControlDblClick($event)">
                 <div class="control-group">
                     <div class="btn note-btn"
                             title="Note - Click to increase; Shift - Click to decrease" 
@@ -112,8 +112,7 @@ styles: `
     /* Expanded controls - hidden by default, shown on hover */
     .note-controls {
         position: absolute;
-        bottom: -75px;
-        left: 0px;
+        bottom: 0px;
         background-color: var(--c-o);
         z-index: 10;
         display: flex;
@@ -255,6 +254,8 @@ export class NoteComponent implements OnDestroy {
     get isSelected(): boolean {
       return this._isSelected;
     }
+    @Input('selectedCount') selectedCount: number = 0
+    @Input('isDragging') isDragging: boolean = false
     @Input('timelineRect') timelineRect: DOMRect
     @Input('yPos') yPos: number = 0
     @Input('height') height: number = 0

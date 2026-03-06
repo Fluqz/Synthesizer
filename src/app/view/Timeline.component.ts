@@ -191,6 +191,7 @@ export interface DragState {
                 [yPos]="noteYArray[i]"
                 [height]="noteHeight"
                 [isSelected]="(selectedNoteIds$ | async)?.has(note.id)"
+                [selectedCount]="(selectedNoteIds$ | async)?.size ?? 0"
                 [isDragging]="isDragging$ | async"
               >
                 <div class="drag-handle drag-start" data-handle="start"></div>
@@ -1112,13 +1113,41 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
             const noteX = (position.time / this._bars) * rect.width;
             const noteWidth = (position.length / this._bars) * rect.width;
             
+            console.log('🎨 Updating note DOM:', {
+              noteId,
+              position,
+              noteX,
+              noteWidth,
+              bars: this._bars,
+              rectWidth: rect.width,
+            });
+            
             noteElement.style.left = noteX + 'px';
             noteElement.style.width = noteWidth + 'px';
             
             // Only update Y position for move operations (not resize)
             if (dragState.type === 'move') {
+              // Calculate this note's row based on its original row offset
               const currentRowIndex = dragState.currentRowIndex !== undefined ? dragState.currentRowIndex : 0;
-              const noteY = (this.wrapperHeight / this.rows) * currentRowIndex;
+              const originalRowIndex = dragState.originalRowIndices?.get(noteId) || 0;
+              const rowOffset = originalRowIndex - dragState.startRowIndex;
+              // Allow negative row indices during drag, but clamp final position to valid range
+              const unclamped = currentRowIndex + rowOffset;
+              const noteRowIndex = Math.max(0, Math.min(unclamped, this.rows - 1));
+              const noteY = (this.wrapperHeight / this.rows) * noteRowIndex;
+              
+              console.log('🎨 Updating note row:', {
+                noteId,
+                currentRowIndex,
+                originalRowIndex,
+                rowOffset,
+                unclamped,
+                noteRowIndex,
+                noteY,
+                wrapperHeight: this.wrapperHeight,
+                rows: this.rows,
+              });
+              
               noteElement.style.top = noteY + 'px';
             }
           }
@@ -1403,11 +1432,19 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
     const newNotes = this.timelineState.pasteAtNextBar(currentTime);
     if (newNotes.length > 0) {
-      // Add notes to sequencer and select them
+      // Add notes to sequencer and preserve their row indices
+      const newNoteIds: number[] = [];
       for (const note of newNotes) {
-        this.sequencer.addNote(note.note, note.time, note.length, note.velocity);
+        const createdNote = this.sequencer.addNote(note.note, note.time, note.length, note.velocity);
+        // Preserve the row index from pasted note
+        if (createdNote && note.rowIndex !== undefined) {
+          createdNote.rowIndex = note.rowIndex;
+        }
+        if (createdNote) {
+          newNoteIds.push(createdNote.id);
+        }
       }
-      this.timelineState.selectNotes(newNotes.map(n => n.id));
+      this.timelineState.selectNotes(newNoteIds);
       this.update();
       this.saveUndo();
       console.log(`Pasted ${newNotes.length} note(s)`);

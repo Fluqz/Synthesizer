@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable } from "@angular/core";
+import { BehaviorSubject, Observable } from "rxjs";
 
 export interface SelectionBox {
   startX: number;
@@ -98,7 +98,7 @@ export class TimelineSelectionService {
 
     // Get all note elements
     const noteElements = Array.from(
-      this.timelineElement.querySelectorAll('.note'),
+      this.timelineElement.querySelectorAll(".note"),
     ) as HTMLElement[];
 
     // Find notes that intersect with selection box
@@ -106,7 +106,7 @@ export class TimelineSelectionService {
 
     for (const noteElement of noteElements) {
       if (this.isNoteIntersectingBox(noteElement, box)) {
-        const noteId = noteElement.getAttribute('data-note-id');
+        const noteId = noteElement.getAttribute("data-note-id");
         if (noteId) {
           selectedNoteIds.push(parseInt(noteId, 10));
         }
@@ -131,7 +131,10 @@ export class TimelineSelectionService {
   /**
    * Check if a note element intersects with selection box
    */
-  private isNoteIntersectingBox(noteElement: HTMLElement, box: SelectionBox): boolean {
+  private isNoteIntersectingBox(
+    noteElement: HTMLElement,
+    box: SelectionBox,
+  ): boolean {
     const noteRect = noteElement.getBoundingClientRect();
 
     const boxRect = {
@@ -153,7 +156,12 @@ export class TimelineSelectionService {
   /**
    * Get selection box bounding info
    */
-  getSelectionBoxBounds(): { x: number; y: number; width: number; height: number } | null {
+  getSelectionBoxBounds(): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null {
     const box = this.selectionBox.value;
 
     if (!box.visible) {

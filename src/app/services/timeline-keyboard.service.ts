@@ -1,5 +1,5 @@
-import { Injectable, HostListener } from '@angular/core';
-import { TimelineStateService } from './timeline-state.service';
+import { Injectable, HostListener } from "@angular/core";
+import { TimelineStateService } from "./timeline-state.service";
 
 @Injectable()
 export class TimelineKeyboardService {
@@ -28,31 +28,31 @@ export class TimelineKeyboardService {
    */
   handleKeyDown(event: KeyboardEvent): void {
     // Ctrl+C or Cmd+C: Copy selected notes
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "c") {
       event.preventDefault();
       this.handleCopy();
     }
 
     // Ctrl+V or Cmd+V: Paste at playhead
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") {
       event.preventDefault();
       this.handlePaste();
     }
 
     // Delete or Backspace: Remove selected notes
-    if (event.key === 'Delete' || event.key === 'Backspace') {
+    if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
       this.handleDelete();
     }
 
     // Ctrl+A or Cmd+A: Select all notes
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") {
       event.preventDefault();
       this.handleSelectAll();
     }
 
     // Escape: Deselect all
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       event.preventDefault();
       this.handleDeselect();
     }
@@ -65,7 +65,7 @@ export class TimelineKeyboardService {
     const selected = this.timelineState.getSelectedCount();
 
     if (selected === 0) {
-      console.log('No notes selected to copy');
+      console.log("No notes selected to copy");
       return;
     }
 
@@ -82,12 +82,12 @@ export class TimelineKeyboardService {
    */
   private handlePaste(): void {
     if (!this.timelineState.hasClipboard()) {
-      console.log('Clipboard is empty');
+      console.log("Clipboard is empty");
       return;
     }
 
     // Get clipboard count for logging
-    const clipboard = this.timelineState.clipboard$.subscribe(data => {
+    const clipboard = this.timelineState.clipboard$.subscribe((data) => {
       if (data) {
         console.log(`Pasted ${data.notes.length} note(s)`);
       }
@@ -107,7 +107,7 @@ export class TimelineKeyboardService {
     const selected = this.timelineState.getSelectedCount();
 
     if (selected === 0) {
-      console.log('No notes selected to delete');
+      console.log("No notes selected to delete");
       return;
     }
 
@@ -138,6 +138,6 @@ export class TimelineKeyboardService {
    */
   private handleDeselect(): void {
     this.timelineState.clearSelection();
-    console.log('Deselected all notes');
+    console.log("Deselected all notes");
   }
 }
