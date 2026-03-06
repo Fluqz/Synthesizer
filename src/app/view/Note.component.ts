@@ -35,8 +35,8 @@ import { CommonModule } from "@angular/common";
 
             <ng-content></ng-content>
 
-            <!-- Expanded view (on hover via CSS) -->
-            <div class="note-controls" [class.selected]="isSelected" [style.bottom.px]="-height" [style.line-height.px]="height" (dblclick)="onNoteControlDblClick($event)">
+            <!-- Expanded view (on hover via CSS) - hide while dragging -->
+            <div class="note-controls" [class.selected]="isSelected && !isDragging" [style.bottom.px]="-height" [style.line-height.px]="height" (dblclick)="onNoteControlDblClick($event)">
                 <div class="control-group">
                     <div class="btn note-btn"
                             title="Note - Click to increase; Shift - Click to decrease" 
@@ -114,7 +114,7 @@ styles: `
         position: absolute;
         bottom: -75px;
         left: 0px;
-        background-color: var(--c-y);
+        background-color: var(--c-o);
         z-index: 10;
         display: flex;
         flex-direction: center;
@@ -149,6 +149,8 @@ styles: `
         color: inherit;
         pointer-events: auto;
         line-height:inherit;
+        background-color: var(--c-em);
+
     }
 
     .note .btn:hover {
@@ -243,7 +245,16 @@ export class NoteComponent implements OnDestroy {
     }
     get note(): SequenceObject { return this._note }
 
-    @Input('isSelected') isSelected: boolean = false
+    private _isSelected: boolean = false;
+    @Input('isSelected') set isSelected(value: boolean) {
+      if (value !== this._isSelected) {
+        console.log(`📌 Note ${this._note?.id} isSelected changed from ${this._isSelected} to ${value}`);
+      }
+      this._isSelected = value;
+    }
+    get isSelected(): boolean {
+      return this._isSelected;
+    }
     @Input('timelineRect') timelineRect: DOMRect
     @Input('yPos') yPos: number = 0
     @Input('height') height: number = 0

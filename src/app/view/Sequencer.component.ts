@@ -6,7 +6,7 @@ import * as Tone from "tone";
 import { Synthesizer, type Channel } from "../synthesizer/synthesizer";
 import { type NoteLength, type SequenceObject, Sequencer } from "../synthesizer/sequencer";
 import { Storage } from "../core/storage";
-import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output } from "@angular/core";
+import { AfterViewInit, ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from "@angular/core";
 import { TimelineComponent } from "./Timeline.component";
 import { getChannelColor } from "../core/colors";
 import { CommonModule } from "@angular/common";
@@ -52,6 +52,7 @@ export const convertNoteLength = (n: NoteLength) => {
                 <div class="btn duplicate" title="Duplicate sequencer" (click)="onDuplicateHandler($event)">D</div>
                 
                 <div class="btn bars deactivated" title="Amount of bars">{{sequencer.bars}}</div>
+                <div class="btn add-row" title="Add row" (click)="onAddRow()">+R</div>
                 <div class="btn delete" title="Delete sequencer" (click)="onDelete()">&#x2715;</div>
                 
             </div>
@@ -256,6 +257,8 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
     @Output('onDuplicate') onDuplicate: EventEmitter<Sequencer> = new EventEmitter()
     @Output('onDeleteSequencer') onDeleteSequencer: EventEmitter<Sequencer> = new EventEmitter()
     
+    @ViewChild(TimelineComponent) timelineComponent: TimelineComponent
+    
     /** Input field value for adding new channels */
     channelInputValue: number | null = null
     
@@ -339,6 +342,14 @@ export class SequencerComponent implements AfterViewInit, OnDestroy {
         this.updateBars()
 
         this.saveUndo()
+    }
+
+    /** Add a new row to timeline */
+    onAddRow() {
+        
+        if (this.timelineComponent) {
+            this.timelineComponent.onAddRow()
+        }
     }
     
     getNotesInBar(bar: number) {

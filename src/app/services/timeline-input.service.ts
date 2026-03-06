@@ -17,6 +17,7 @@ export interface DragState {
   handle: number; // 0 = start, 1 = end
   startRowIndex: number;
   pixelsPerBar: number;
+  currentRowIndex?: number; // Current row during drag
 }
 
 export interface DragUpdate {
@@ -128,6 +129,35 @@ export class TimelineInputService {
     });
 
     const pixelsPerBar = this.timelineRect.width / this.bars;
+    
+    // Initialize with the starting row of the first note being dragged
+    let startRowIndex = 0;
+    let firstNote: SequenceObject | undefined;
+    
+    if (noteIds.length > 0) {
+      firstNote = this.sequencer.sequence.find(n => n.id === noteIds[0]);
+      if (firstNote) {
+        startRowIndex = firstNote.rowIndex || 0;
+        console.log('📌 Note row assignment:', {
+          noteId: firstNote.id,
+          rowIndex: firstNote.rowIndex,
+          startRowIndex,
+        });
+      }
+    }
+    
+    // Debug: show all note rows
+    const allNotes = this.sequencer.sequence.map(n => ({ id: n.id, rowIndex: n.rowIndex }));
+    console.log('📊 All notes in sequence:', allNotes);
+    
+    // Check if the note we're dragging was just created
+    if (firstNote) {
+      console.log('🎬 First note details:', {
+        id: firstNote.id,
+        rowIndex: firstNote.rowIndex,
+        time: firstNote.time,
+      });
+    }
 
     const newState: DragState = {
       active: true,
@@ -141,9 +171,12 @@ export class TimelineInputService {
       dragOffsetX: 0,
       dragOffsetY: 0,
       handle: 0,
-      startRowIndex: 0,
+      startRowIndex,
       pixelsPerBar,
+      currentRowIndex: startRowIndex,
     };
+
+    console.log('🟢 startDragMultiple:', { noteIds, startRowIndex });
 
     this.dragState.next(newState);
     // DO NOT set isDragging to true yet - wait for movement threshold
@@ -234,6 +267,33 @@ export class TimelineInputService {
   }
 
   /**
+   * Update current row during drag based on pointer Y position
+   * Only updates if the pointer has clearly moved to a different row
+   */
+  updateDragRow(clientY: number, timelineTop: number, timelineHeight: number, totalRows: number): void {
+    const state = this.dragState.value;
+    if (!state.active || state.type !== 'move') return;
+
+    // Calculate which row the pointer is over
+    const relativeY = clientY - timelineTop;
+    const rowHeight = timelineHeight / Math.max(totalRows, 1);
+    const newRowIndex = Math.floor(relativeY / rowHeight);
+    const clampedRowIndex = Math.max(0, Math.min(newRowIndex, totalRows - 1));
+
+    const currentRow = state.currentRowIndex !== undefined ? state.currentRowIndex : 0;
+    
+    // Update row if pointer has moved to a different row
+    // Allow easy dragging between rows without strict threshold
+    if (clampedRowIndex !== currentRow) {
+      console.log('🎯 Row change:', { previousRow: currentRow, newRow: clampedRowIndex });
+      
+      // Update the current row in the drag state
+      const newState = { ...state, currentRowIndex: clampedRowIndex };
+      this.dragState.next(newState);
+    }
+  }
+
+  /**
    * Update drag positions (called on pointermove)
    */
   updateDrag(event: PointerEvent): DragUpdate {
@@ -253,20 +313,16 @@ export class TimelineInputService {
       // Moving all selected notes - maintain their spacing
       for (const [noteId, original] of state.originalPositions) {
         let newTime = original.time + deltaInBars;
-        newTime = Math.max(0, newTime); // Prevent going before start
+        // Boundary: prevent going before start and beyond the timeline end
+        const maxTime = this.bars - original.length;
+        newTime = Math.max(0, Math.min(newTime, maxTime));
 
         positions.set(noteId, {
           time: this.applyQuantization(newTime),
           length: original.length,
         });
       }
-      console.log('📍 updateDrag (MOVE):', {
-        deltaX,
-        deltaInBars,
-        pixelsPerBar: state.pixelsPerBar,
-        type: state.type,
-        positions: Array.from(positions.entries()).slice(0, 2), // Log first 2 notes
-      });
+
     } else if (state.type === 'resize-start') {
       // Resizing start handle of all selected notes
       for (const [noteId, original] of state.originalPositions) {
@@ -278,7 +334,7 @@ export class TimelineInputService {
           length: original.time + original.length - newStartTime,
         });
       }
-      console.log('📍 updateDrag (RESIZE-START):', { deltaInBars, type: state.type });
+
     } else if (state.type === 'resize-end') {
       // Resizing end handle of all selected notes
       for (const [noteId, original] of state.originalPositions) {
@@ -296,7 +352,7 @@ export class TimelineInputService {
           length: this.applyQuantization(newLength),
         });
       }
-      console.log('📍 updateDrag (RESIZE-END):', { deltaInBars, type: state.type });
+
     }
 
     return { positions, isValid, deltaInBars };
@@ -309,15 +365,20 @@ export class TimelineInputService {
     const state = this.dragState.value;
 
     if (!state.active) {
-      console.log('❌ endDrag: drag not active');
+      console.log('❌ endDrag: drag not active', {
+        dragStateActive: state.active,
+        dragStateType: state.type,
+        isDragging: this.isDragging.value,
+      });
       return { success: false, updatedNotes: new Map() };
     }
 
-    // Check if there was actual movement
-    const hasMovement = Math.abs(event.clientX - state.startClientX) > 3;
+    // Check if there was actual movement (X or Y direction)
+    const hasXMovement = Math.abs(event.clientX - state.startClientX) > 3;
+    const hasYMovement = Math.abs(event.clientY - state.startClientY) > 3;
+    const hasMovement = hasXMovement || hasYMovement;
 
     if (!hasMovement) {
-      console.log('❌ endDrag: no movement detected');
       this.cancelDrag();
       return { success: false, updatedNotes: new Map() };
     }
@@ -326,16 +387,9 @@ export class TimelineInputService {
     const update = this.updateDrag(event);
 
     if (!update.isValid) {
-      console.log('❌ endDrag: invalid update');
       this.cancelDrag();
       return { success: false, updatedNotes: new Map() };
     }
-
-    console.log('✅ endDrag: committing changes', {
-      dragType: state.type,
-      noteIds: state.noteIds,
-      updates: Array.from(update.positions.entries()).slice(0, 2),
-    });
 
     // Commit to sequencer
     const updatedNotes = new Map<number, { time: number; length: number }>();
@@ -343,10 +397,6 @@ export class TimelineInputService {
     for (const [noteId, position] of update.positions) {
       const note = this.sequencer.sequence.find((n: SequenceObject) => n.id === noteId);
       if (note) {
-        console.log(`  📝 Updating note ${noteId}:`, {
-          before: { time: note.time, length: note.length },
-          after: position,
-        });
         this.sequencer.updateNote(
           noteId,
           note.note,
@@ -354,8 +404,19 @@ export class TimelineInputService {
           position.length,
           note.velocity,
         );
+        
+        // Update row index only for move operations (not resize)
+        if (state.type === 'move' && state.currentRowIndex !== undefined) {
+          note.rowIndex = state.currentRowIndex;
+        }
+        
         updatedNotes.set(noteId, position);
       }
+    }
+
+    // Cut overlapping notes on drag end (for move operations)
+    if (state.type === 'move') {
+      this.cutOverlappingNotes();
     }
 
     this.cancelDrag();
@@ -366,7 +427,6 @@ export class TimelineInputService {
    * Cancel drag operation (discard changes)
    */
   cancelDrag(): void {
-    console.log('🔄 cancelDrag: resetting drag state');
     this.dragState.next(initialDragState);
     this.isDragging.next(false);
   }
@@ -398,5 +458,134 @@ export class TimelineInputService {
   private applyQuantization(value: number): number {
     if (this.gridQuantize === null) return value;
     return Math.round(value / this.gridQuantize) * this.gridQuantize;
+  }
+
+  /**
+   * Add a new empty row to the timeline
+   */
+  addRow(): void {
+    if (!this.sequencer) return;
+    console.log('✅ Row created (notes can now be assigned to higher rowIndex values)');
+    // Rows are created on-demand when notes are assigned to them via updateDrag or manual rowIndex assignment
+  }
+
+  /**
+   * Cut overlapping notes when a dragged note is dropped
+   * Finds all notes in the target row that overlap with the dragged note and truncates them
+   */
+  cutOverlappingNotes(): void {
+    if (!this.sequencer) return;
+
+    const state = this.dragState.value;
+    if (!state.active || state.type !== 'move' || state.noteIds.length === 0) return;
+
+    const notes = this.sequencer.sequence;
+    
+    // Get the moved notes and their current positions
+    const movedNotes = notes.filter(n => state.noteIds.includes(n.id));
+    
+    // For each moved note, find and cut overlapping notes in the same row
+    for (const movedNote of movedNotes) {
+      const movedTime = typeof movedNote.time === 'number' ? movedNote.time : 0;
+      const movedLength = typeof movedNote.length === 'number' ? movedNote.length : 0;
+      const movedEnd = movedTime + movedLength;
+      const movedRow = movedNote.rowIndex || 0;
+
+      // Find all notes in the same row that overlap with the moved note
+      const overlappingNotes = notes.filter(n => {
+        if (n.id === movedNote.id || (n.rowIndex || 0) !== movedRow) return false;
+        
+        const noteTime = typeof n.time === 'number' ? n.time : 0;
+        const noteLength = typeof n.length === 'number' ? n.length : 0;
+        const noteEnd = noteTime + noteLength;
+        
+        // Check for overlap
+        return noteTime < movedEnd && noteEnd > movedTime;
+      });
+
+      // Cut each overlapping note
+      for (const overlappingNote of overlappingNotes) {
+        const overlapTime = typeof overlappingNote.time === 'number' ? overlappingNote.time : 0;
+        const overlapLength = typeof overlappingNote.length === 'number' ? overlappingNote.length : 0;
+        const overlapEnd = overlapTime + overlapLength;
+
+        // If the moved note starts before the overlapping note ends
+        if (movedTime < overlapEnd && movedTime > overlapTime) {
+          // Cut the overlapping note to end where the moved note starts
+          const newLength = movedTime - overlapTime;
+          if (newLength > 0.05) { // Only update if resulting length is meaningful
+            this.sequencer.updateNote(
+              overlappingNote.id,
+              overlappingNote.note,
+              overlapTime,
+              newLength,
+              overlappingNote.velocity,
+            );
+            console.log(`✂️  Cut note ${overlappingNote.id}: length ${overlapLength} → ${newLength}`);
+          } else {
+            // If cut would be too short, remove the note
+            this.sequencer.removeNote(overlappingNote.id);
+            console.log(`🗑️  Removed note ${overlappingNote.id} (too short after cut)`);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Auto-arrange notes into rows when they overlap
+   * Notes on the same row must not overlap horizontally
+   */
+  autoArrangeRows(): void {
+    if (!this.sequencer) return;
+
+    const notes = this.sequencer.sequence;
+    
+    // Reset all row indices
+    notes.forEach(note => {
+      note.rowIndex = 0;
+    });
+
+    // Sort notes by start time for processing
+    const sortedNotes = [...notes].sort((a, b) => {
+      const timeA = typeof a.time === 'number' ? a.time : 0;
+      const timeB = typeof b.time === 'number' ? b.time : 0;
+      return timeA - timeB;
+    });
+
+    // Assign each note to the first available row that doesn't overlap
+    for (const note of sortedNotes) {
+      const noteTime = typeof note.time === 'number' ? note.time : 0;
+      const noteLength = typeof note.length === 'number' ? note.length : 0;
+      const noteEnd = noteTime + noteLength;
+
+      let assignedRow = 0;
+      let rowFound = false;
+
+      // Try to find a row where this note doesn't overlap with existing notes
+      for (let row = 0; row <= notes.length; row++) {
+        const notesInRow = notes.filter(n => (n.rowIndex || 0) === row && n.id !== note.id);
+        
+        // Check if note overlaps with any note in this row
+        const hasOverlap = notesInRow.some(otherNote => {
+          const otherTime = typeof otherNote.time === 'number' ? otherNote.time : 0;
+          const otherLength = typeof otherNote.length === 'number' ? otherNote.length : 0;
+          const otherEnd = otherTime + otherLength;
+          
+          // Check for overlap: note starts before otherNote ends AND note ends after otherNote starts
+          return noteTime < otherEnd && noteEnd > otherTime;
+        });
+
+        if (!hasOverlap) {
+          assignedRow = row;
+          rowFound = true;
+          break;
+        }
+      }
+
+      note.rowIndex = assignedRow;
+    }
+
+
   }
   }

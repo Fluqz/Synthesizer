@@ -12,7 +12,8 @@ export type SequenceObject = {
     note: Tone.Unit.Frequency | REST,
     time: Tone.Unit.Time,
     length: Tone.Unit.Time,
-    velocity?: number
+    velocity?: number,
+    rowIndex?: number  // Track which row the note is on (0-based, defaults to 0)
 }
 
 export interface ISequencerSerialization extends ISerialization {
@@ -139,15 +140,17 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
     // })()
 
     /** Add a note to the sequence */
-    addNote(note: Tone.Unit.Frequency, time: Tone.Unit.Time, length: Tone.Unit.Time, velocity: number) {
+    addNote(note: Tone.Unit.Frequency, time: Tone.Unit.Time, length: Tone.Unit.Time, velocity: number): SequenceObject | undefined {
 
         if(!Tone.isNote(note)) return
 
-        const n: SequenceObject = { id: this.count++, note, time, length, velocity }
+        const n: SequenceObject = { id: this.count++, note, time, length, velocity, rowIndex: 0 }
 
         this.sequence.push(n)
         
         if(this.toneSequence) this.toneSequence.add(n)
+        
+        return n
     }
 
     updateNote(id:number, note: Tone.Unit.Frequency, time: Tone.Unit.Time, length: Tone.Unit.Time, velocity: number) {
@@ -438,7 +441,13 @@ export class Sequencer implements ISerialize<ISequencerSerialization>, IComponen
         this.sequence.length = 0
         if(o.sequence && o.sequence.length) {
 
-            for(let s of o.sequence) this.addNote(s.note, s.time, s.length, s.velocity)
+            for(let s of o.sequence) {
+                const createdNote = this.addNote(s.note, s.time, s.length, s.velocity)
+                // Preserve the rowIndex from serialized data
+                if(createdNote && s.rowIndex !== undefined) {
+                    createdNote.rowIndex = s.rowIndex
+                }
+            }
         }
         if(o.humanize) this.humanize = o.humanize
         if(o.bars) this.bars = o.bars

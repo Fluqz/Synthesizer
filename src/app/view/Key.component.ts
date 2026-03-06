@@ -123,6 +123,9 @@ export class KeyComponent implements AfterViewInit {
         if(!e) return
         if(e.repeat) return
         if(e.target instanceof HTMLInputElement) return
+        
+        // Ignore key presses while command/control is held (prevents stuck notes during copy/paste)
+        if(e.metaKey || e.ctrlKey) return
 
         if(this.key.mapping === e.key || this.key.mapping === e.key.toLowerCase()) {
 
