@@ -141,7 +141,7 @@ export class TimelineInputService {
         }
 
         originalPositions.set(noteId, { time, length });
-        originalRowIndices.set(noteId, note.rowIndex || 0);
+        originalRowIndices.set(noteId, note.rowIndex !== undefined && note.rowIndex !== -1 ? note.rowIndex : this.sequencer.sequence.indexOf(note));
       }
     }
 
@@ -165,10 +165,12 @@ export class TimelineInputService {
 
     // Use the minimum row index of all dragged notes as the reference
     // This ensures proper offset calculations for all notes
-    let startRowIndex = Math.min(...originalRowIndices.values(), 0);
+    const rowIndices = Array.from(originalRowIndices.values());
+    let startRowIndex = rowIndices.length > 0 ? Math.min(...rowIndices) : 0;
     
     console.log('📊 Row indices for selected notes:', {
       originalRowIndices: Array.from(originalRowIndices.entries()),
+      rowIndices,
       startRowIndex,
       initialClientY: event.clientY,
     });
@@ -336,7 +338,7 @@ export class TimelineInputService {
 
   /**
    * Update current row during drag based on pointer Y position
-   * Uses fixed row height of 25px and calculates row delta from starting position
+   * Determines which row the pointer is currently over
    */
   updateDragRow(
     clientY: number,
@@ -345,41 +347,20 @@ export class TimelineInputService {
     totalRows: number,
   ): void {
     const state = this.dragState.value;
-    if (!state.active || state.type !== "move" || state.initialClientY === undefined) return;
+    if (!state.active || state.type !== "move") return;
 
-    // Calculate how far the pointer has moved vertically from where it started
-    // Don't rely on timeline coordinates, just track the movement
-    const deltaY = clientY - state.initialClientY;
-    const rowDelta = Math.floor(deltaY / FIXED_ROW_HEIGHT);
-    const newRowIndex = state.startRowIndex + rowDelta;
-    // Don't clamp here - let it be negative if needed
-    // Each note will be clamped individually based on its offset
-    const clampedRowIndex = newRowIndex;
-
-    const currentRow = state.currentRowIndex !== undefined ? state.currentRowIndex : state.startRowIndex;
+    // Calculate which row the mouse pointer is currently over
+    const relativeY = clientY - timelineTop;
+    const rowHeight = timelineHeight / totalRows;
+    const rowUnderPointer = Math.floor(relativeY / rowHeight);
     
-    console.log("🔍 updateDragRow:", {
-      clientY,
-      initialClientY: state.initialClientY,
-      deltaY,
-      rowDelta,
-      startRowIndex: state.startRowIndex,
-      newRowIndex,
-      clampedRowIndex,
-      currentRow,
-      totalRows,
-    });
+    // Clamp to valid row range [0, totalRows-1]
+    const newRowIndex = Math.max(0, Math.min(rowUnderPointer, totalRows - 1));
+    const currentRow = state.currentRowIndex !== undefined ? state.currentRowIndex : 0;
     
-    // Update row if pointer has moved to a different row
-    if (clampedRowIndex !== currentRow) {
-      console.log("🎯 Row change:", { 
-        previousRow: currentRow, 
-        newRow: clampedRowIndex,
-        direction: clampedRowIndex > currentRow ? 'down' : 'up'
-      });
-
-      // Update the current row in the drag state
-      const newState = { ...state, currentRowIndex: clampedRowIndex };
+    // Update row if mouse is over a different row
+    if (newRowIndex !== currentRow) {
+      const newState = { ...state, currentRowIndex: newRowIndex };
       this.dragState.next(newState);
     }
   }

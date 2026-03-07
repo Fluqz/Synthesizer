@@ -753,34 +753,15 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       this.clickedNoteIdOnPointerDown = noteId;
 
       if (e.ctrlKey || e.metaKey) {
-        // Ctrl+Click: Toggle selection (add/remove individual note)
-        console.log('👆 Ctrl+Click toggle:', noteId);
         this.timelineState.toggleSelectNote(noteId);
-        // Don't open controls during modifier clicks
         this._clickedSequenceObjectID = null;
-        // Clear the clicked note since this was a modifier click (not a pure click)
         this.clickedNoteIdOnPointerDown = null;
       } else if (e.shiftKey) {
-        // Shift+Click: ADD this note to selection (just the clicked note, no range)
-        console.log('⬆️ Shift+Click add to selection:', noteId);
-        this.timelineState.selectNote(noteId, false); // false = don't clear others
-        // Don't open controls during shift clicks
+        this.timelineState.selectNote(noteId, false);
         this._clickedSequenceObjectID = null;
-        // Clear the clicked note since this was a modifier click (not a pure click)
         this.clickedNoteIdOnPointerDown = null;
       } else {
-        // Single click on unselected note: Don't select yet - wait for pointerup to confirm it's a pure click
-        if (previouslySelected) {
-          // Already selected - start drag with current selection
-          console.log('👆 Single click on already-selected note:', noteId, '- will drag or show controls on pointerup');
-        } else {
-          // Not selected - DON'T select on pointerdown (this would show controls)
-          // Only select on pointerup if it's a pure click, or start drag if it moves
-          console.log('👆 Single click new note (not yet selected):', noteId, '- will decide on pointerup');
-        }
-        // Don't open controls on pointerdown - wait for pointerup
         this._clickedSequenceObjectID = null;
-        console.log('🔴 SET _clickedSequenceObjectID = null on pointerdown, current value:', this._clickedSequenceObjectID);
       }
 
       // Clear any stale altered sequence object before starting drag
@@ -791,27 +772,18 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
       // Start drag with the clicked note, or current selection if clicking on already-selected note
       const selectedIds = this.timelineState.getSelectedNoteIds();
-      console.log('💫 After pointerdown handling - selectedIds:', Array.from(selectedIds), 'clickedNote:', this.clickedNoteIdOnPointerDown);
       
       // Determine which notes to drag
       let notesToDrag: number[];
       if (this.clickedNoteIdOnPointerDown !== null) {
-        // A note was clicked
         const isClickedNoteSelected = selectedIds.includes(this.clickedNoteIdOnPointerDown);
         if (isClickedNoteSelected) {
-          // Clicking on an already-selected note - drag the whole selection
           notesToDrag = selectedIds;
-          console.log('💫 Dragging selected notes (clicked note is in selection):', notesToDrag);
         } else {
-          // Clicking on an unselected note - drag only that note (don't select yet)
-          // Selection will happen on pointerup if it's a pure click
           notesToDrag = [this.clickedNoteIdOnPointerDown];
-          console.log('💫 Dragging only clicked note (unselected):', notesToDrag);
         }
       } else {
-        // No note clicked - drag current selection
         notesToDrag = selectedIds;
-        console.log('💫 Dragging current selection:', notesToDrag);
       }
       
       if (notesToDrag.length > 0) {
@@ -833,27 +805,21 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Handle pointer down on note body
-   */
+    * Handle pointer down on note body
+    */
   private handleNotePointerDown(event: PointerEvent, noteElement: Element | null) {
-    console.log('🟢 handleNotePointerDown called', noteElement);
     if (!noteElement) {
-      console.log('❌ noteElement is null, returning');
       return;
     }
     event.preventDefault();
 
     const noteId = (noteElement as HTMLElement).getAttribute("data-note-id");
-    console.log('🔑 noteId from data-note-id:', noteId);
     if (!noteId) {
-      console.log('❌ noteId not found, returning');
       return;
     }
 
     const note = this.sequence.find((n) => n.id === parseInt(noteId));
-    console.log('📋 Found note:', note, 'from sequence:', this.sequence);
     if (!note) {
-      console.log('❌ note not found in sequence, returning');
       return;
     }
 
@@ -881,13 +847,6 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
     this.originalNoteTime = Tone.Time(note.time).toSeconds();
 
     if (!this.alteredSequenceObject) this.alteredSequenceObject = { ...note };
-    
-    console.log('✅ handleNotePointerDown complete', {
-      noteId: note.id,
-      isPointerDown: this.isPointerDown,
-      clickOffsetX: this.clickOffsetX,
-      pointerPosition: { x: this.pointerPositionX, y: this.pointerPositionY }
-    });
   }
 
   /**
@@ -916,6 +875,11 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
     const noteTimeInBars = typeof note.time === "number" ? note.time : 0;
     const noteLengthInBars = typeof note.length === "number" ? note.length : 0;
+
+    // Cache the timeline rect at the start of resize for consistent calculations
+    this.cachedTimelineRect = this._timeline?.nativeElement?.getBoundingClientRect() || this.timelineRect;
+
+
 
     this.dragState = {
       active: true,
@@ -1041,23 +1005,10 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       const deltaY = e.clientY - dragState.startClientY;
       const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
       
-      console.log('📊 Threshold check:', {
-        dragStateActive: dragState.active,
-        isCurrentlyDragging: this.inputService.isCurrentlyDragging(),
-        distance: distance.toFixed(2),
-        exceedsThreshold: distance > 3,
-      });
-      
       // If movement exceeds threshold (3px), activate actual dragging
       if (distance > 3) {
-        console.log('🔥 THRESHOLD MET! Setting dragWasActivated = true', {
-          dragState: dragState.type,
-          noteIds: dragState.noteIds,
-        });
         this.inputService.setDragging(true);
-        this.dragWasActivated = true; // Track that we actually dragged
-        // Close note controls immediately when drag starts (isDragging$ will hide them via binding)
-        console.log('🟠 Closing controls - drag started. _clickedSequenceObjectID was:', this._clickedSequenceObjectID);
+        this.dragWasActivated = true;
         this._clickedSequenceObjectID = null;
         
         // Clear selection if dragging an unselected note
@@ -1067,11 +1018,8 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
         const isAnyDraggedNoteSelected = draggedNoteIds.some(id => currentSelection.includes(id));
         
         if (!isAnyDraggedNoteSelected && draggedNoteIds.length > 0) {
-          // Dragging unselected note(s) - clear previous selection
-          console.log('🟠 Dragging unselected note - clearing previous selection');
           this.timelineState.clearSelection();
         }
-        // Otherwise keep selection as-is (dragging selected notes stays selected)
         
         this.cdr.markForCheck();
       } else {
@@ -1080,12 +1028,14 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       }
     }
 
+    // Handle resize operations directly (legacy resize handler)
+    if (dragState.active && dragState.type?.includes('resize')) {
+      document.body.style.cssText = 'cursor: grabbing !important;';
+      this.resizeNoteMoveHandler(e);
+    }
     // Handle drag/resize via services
-    if (this.inputService.isCurrentlyDragging()) {
-      document.body.style.cursor = 'grabbing';
-      console.log('📍 isDragging = true, processing drag');
-      
-      const dragState = this.inputService.getDragState();
+    else if (this.inputService.isCurrentlyDragging()) {
+      document.body.style.cssText = 'cursor: grabbing !important;';
       
       // Use cached rect during drag to prevent recalculation
       const rect = this.cachedTimelineRect || this.timelineRect;
@@ -1113,41 +1063,17 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
             const noteX = (position.time / this._bars) * rect.width;
             const noteWidth = (position.length / this._bars) * rect.width;
             
-            console.log('🎨 Updating note DOM:', {
-              noteId,
-              position,
-              noteX,
-              noteWidth,
-              bars: this._bars,
-              rectWidth: rect.width,
-            });
-            
             noteElement.style.left = noteX + 'px';
             noteElement.style.width = noteWidth + 'px';
             
             // Only update Y position for move operations (not resize)
             if (dragState.type === 'move') {
-              // Calculate this note's row based on its original row offset
               const currentRowIndex = dragState.currentRowIndex !== undefined ? dragState.currentRowIndex : 0;
               const originalRowIndex = dragState.originalRowIndices?.get(noteId) || 0;
               const rowOffset = originalRowIndex - dragState.startRowIndex;
-              // Allow negative row indices during drag, but clamp final position to valid range
               const unclamped = currentRowIndex + rowOffset;
               const noteRowIndex = Math.max(0, Math.min(unclamped, this.rows - 1));
               const noteY = (this.wrapperHeight / this.rows) * noteRowIndex;
-              
-              console.log('🎨 Updating note row:', {
-                noteId,
-                currentRowIndex,
-                originalRowIndex,
-                rowOffset,
-                unclamped,
-                noteRowIndex,
-                noteY,
-                wrapperHeight: this.wrapperHeight,
-                rows: this.rows,
-              });
-              
               noteElement.style.top = noteY + 'px';
             }
           }
@@ -1165,7 +1091,7 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
    * Handle note body drag movement
    */
   private handleNotePointerMove(e: PointerEvent) {
-    console.log('🟠 handleNotePointerMove - checking conditions', {
+console.log('🟠 handleNotePointerMove - checking conditions', {
       isPointerDown: this.isPointerDown,
       noteEle: !!this.noteEle,
       selectedNote: !!this.selectedNote,
@@ -1257,18 +1183,24 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
      * Unified pointer up handler for both drag and rectangular selection
      */
   onDocumentPointerUp(e: PointerEvent) {
-    console.log('🎯 onDocumentPointerUp called');
     e.stopPropagation();
+
+    // Handle resize end first (legacy resize handler)
+    const dragState = this.inputService.getDragState();
+    if (dragState.active && dragState.type?.includes('resize')) {
+      this.resizeNoteEndHandler(e);
+      document.body.style.cssText = 'cursor: default !important;';
+      this.cdr.markForCheck();
+      return;
+    }
 
     // Handle rectangular selection end first
     const selectedIds = this.selectionService.endDragSelection(e);
     if (selectedIds.length > 0) {
-      console.log('📦 Rectangular selection ended, selected:', selectedIds);
       this.timelineState.selectNotes(selectedIds);
     } else {
       // Handle drag/resize end via service
       const commit = this.inputService.endDrag(e);
-      console.log('🏁 Drag ended, commit:', commit);
       
       // Clear cached rect after drag
       this.cachedTimelineRect = null;
@@ -1306,51 +1238,30 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       // 3. The pointerup happened on the same note
       const wasPureClick = !this.dragWasActivated && this.clickedNoteIdOnPointerDown !== null;
       
-      console.log('📌 onDocumentPointerUp note element check:', {
-        hasNoteElement: !!noteElement,
-        commitSuccess: commit.success,
-        dragWasActivated: this.dragWasActivated,
-        clickedNoteIdOnPointerDown: this.clickedNoteIdOnPointerDown,
-        wasPureClick,
-        dragState: dragState,
-      });
-      
       if (wasPureClick && noteElement) {
-        // This was a pure click (never exceeded drag threshold)
         const noteId = parseInt(noteElement.getAttribute('data-note-id') || '0');
-        // Only handle controls if the pointerup happened on the same note that was clicked
         if (noteId === this.clickedNoteIdOnPointerDown) {
-          // Check if note is selected - if not, select it first
           const isNoteSelected = this.timelineState.isNoteSelected(noteId);
           if (!isNoteSelected) {
-            console.log('📋 Pure click on unselected note - selecting it first:', noteId);
             this.timelineState.selectNote(noteId, true);
           }
           
           const selectedNote = this.sequence.find(n => n.id === noteId);
           if (selectedNote) {
-            console.log('📋 onDocumentPointerUp: Opening controls for note:', noteId);
             this._clickedSequenceObjectID = selectedNote.id;
-            console.log('🟢 SET _clickedSequenceObjectID on pointerup:', this._clickedSequenceObjectID);
           }
         }
-      } else {
-        console.log('📋 onDocumentPointerUp: NOT opening controls - drag occurred or not a pure click. dragWasActivated:', this.dragWasActivated, 'clickedNoteIdOnPointerDown:', this.clickedNoteIdOnPointerDown);
       }
       
-      console.log('🟡 RESET clickedNoteIdOnPointerDown from', this.clickedNoteIdOnPointerDown, 'to null');
-      // Reset the clicked note tracker for the next gesture
       this.clickedNoteIdOnPointerDown = null;
     }
 
     // CRITICAL: Always clear alteredSequenceObject after drag ends
-    // Otherwise it persists and breaks subsequent drags
     if (this.alteredSequenceObject) {
-      console.log('🧹 Clearing alteredSequenceObject');
       this.alteredSequenceObject = null;
     }
 
-    document.body.style.cursor = 'default';
+    document.body.style.cssText = 'cursor: default !important;';
     this.cdr.markForCheck();
   }
 
@@ -1464,7 +1375,7 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
     e.stopPropagation();
     this.inputService.cancelDrag();
     this.selectionService.cancelDragSelection();
-    document.body.style.cursor = 'default';
+    document.body.style.cssText = 'cursor: default !important;';
   }
 
   /**
@@ -1487,8 +1398,11 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
       this.alteredSequenceObject = { ...this.selectedNote };
     }
 
+    // Use cached rect from start of drag for consistent calculations
+    const rect = this.cachedTimelineRect || this.timelineRect;
+    
     // Convert pixels to bar units
-    const pixelsPerBar = this.timelineRect.width / this._bars;
+    const pixelsPerBar = rect.width / this._bars;
     const deltaInBars = deltaX / pixelsPerBar;
 
     let newStartTime = this.dragState.startTime;
@@ -1525,11 +1439,11 @@ export class TimelineComponent implements OnInit, OnChanges, OnDestroy {
 
     // Update DOM directly for smooth drag (no change detection)
     const newWidth =
-      ((newEndTime - newStartTime) / this._bars) * this.timelineRect.width;
+      ((newEndTime - newStartTime) / this._bars) * rect.width;
 
     // Only update left position when dragging start handle
     if (this.dragState.handle === 0) {
-      const newLeft = (newStartTime / this._bars) * this.timelineRect.width;
+      const newLeft = (newStartTime / this._bars) * rect.width;
       this.draggedNoteElement.style.left = newLeft + "px";
     }
 

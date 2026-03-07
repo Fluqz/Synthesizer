@@ -36,7 +36,12 @@ import { CommonModule } from "@angular/common";
             <ng-content></ng-content>
 
             <!-- Expanded view (on hover via CSS) - hide while dragging -->
-            <div class="note-controls" [style.line-height.px]="height" [class.selected]="isSelected && selectedCount === 1 && !isDragging" [style.right.px]="getNoteWidth()" (dblclick)="onNoteControlDblClick($event)">
+            <div class="note-controls" 
+                [style.line-height.px]="height" 
+                [class.selected]="isSelected && selectedCount === 1 && !isDragging" 
+                [style.right.px]="getNoteWidth()" 
+                [style.height.px]="height" 
+                (dblclick)="onNoteControlDblClick($event)">
                 <div class="control-group">
                     <div class="btn note-btn"
                             title="Note - Click to increase; Shift - Click to decrease" 
@@ -127,7 +132,7 @@ styles: `
     }
 
     .note-controls.selected {
-        width: 100%;
+        width: 60px;
         height: 100%;
         pointer-events: auto;
     }
